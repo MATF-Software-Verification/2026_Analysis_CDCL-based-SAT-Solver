@@ -1,0 +1,3 @@
+[submodule "CDCL-based-SAT-Solver"]
+	path = CDCL-based-SAT-Solver
+	url = https://github.com/thtran97/CDCL-based-SAT-Solver
