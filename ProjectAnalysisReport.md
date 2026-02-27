@@ -102,3 +102,47 @@ TODO dodati sliku nakon pokretanja
 
 ## Pokrivenost koda
 TODO - videti da l da radim sa svim testovima ili odvojeno unit/integration
+
+## Statička analiza - Pylint
+Pylint je alat za statičku analizu Python koda koji proverava stil, kvalitet i potencijalne greške bez pokretanja programa.  Može se instalirati komandom:
+```bash
+pip install pylint
+```
+Zvanična dokumentacija dostupna je na: https://pylint.readthedocs.io/en/stable/
+
+Analiza je sprovedena nad glavnim fajlom solvera `cdcl_solver.py`, a ukupna ocena iznosi **6.23/10**.
+
+### Kategorije pronađenih problema
+
+Pylint klasifikuje probleme prema prefiksu u oznaci:
+- **F** (Fatal) - fatalna greška koja je sprečila Pylint da nastavi analizu
+- **E** (Error) — greške koje verovatno uzrokuju probleme pri izvršavanju
+- **W** (Warning) — upozorenja na potencijalne greške
+- **C** (Convention) — kršenje konvencija stila pisanja koda
+- **R** (Refactor) — predlozi za poboljšanje strukture koda
+
+Komanda za pokretanje:
+```bash
+pylint CDCL-based-SAT-Solver/cdcl_solver.py
+```
+izlaz:
+
+![Izlaz](./images/pylint_izlaz.png)
+
+Opisi problema su prilično informativni tako da se može lako razumeti gde je nastao koji problem.
+### Pronađeni problemi
+
+**Stilski problemi (C)** su najbrojniji. Dominiraju `trailing-whitespace` upozorenja — višak belina na kraju linija koda, kao i nekoliko `line-too-long` upozorenja gde linije prelaze dozvoljenih 100 karaktera. Pored toga, nedostaju docstringovi (tekstualni opisi) za modul, klasu i sve metode (`missing-module-docstring`, `missing-class-docstring`, `missing-function-docstring`). Takođe je uočen pogrešan redosled importa — standardne biblioteke (`random`, `time`) treba da budu importovane pre biblioteka trećih strana.
+
+**Upozorenja (W)** ukazuju na tri nekorišćena importa: `numpy`, `random` i `Lazy_Clause` su importovani ali se nigde ne koriste u fajlu. Prisutna su i dva `fixme` upozorenja koja odgovaraju TODO komentarima u kodu — njihovo prisustvo u finalnoj verziji koda nije poželjno jer ukazuje na nedovršenu implementaciju i može zbuniti buduće čitaoce koda.
+
+**Predlozi za refaktorisanje (R)** ukazuju na strukturne probleme: klasa `CDCL_Solver` ima previše atributa (16, dok je preporučeno maksimalno 7), glavna metoda solvera ima previše grana (19) i previše naredbi (68), što ukazuje na visoku složenost koja otežava čitanje i testiranje. Takođe je uočen `no-else-return` — nepotrebna `else` grana nakon `return` naredbe.
+
+**Imenovanje** — ime klase `CDCL_Solver` ne prati Python konvenciju PascalCase (trebalo bi biti `CDCLSolver`).
+
+### Zaključak
+
+Većina pronađenih problema su stilske prirode i ne utiču na ispravnost programa. 
+Međutim, upozorenja o nekorišćenim importima i previsokoj složenosti glavne metode solvera su vredni pažnje - nekorišćeni importi povećavaju nepotrebne zavisnosti, a visoka složenost glavne metode direktno otežava testiranje i održavanje.
+
+TODO pokrenuti eventualno nad nekim drugim fajlom
