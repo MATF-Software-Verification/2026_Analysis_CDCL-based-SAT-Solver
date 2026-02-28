@@ -58,13 +58,29 @@ Testovi su smešteni u folderu `tests/unit` i organizovani po klasama koje testi
 Klasa `Clause` predstavlja jednu logičku klauzu u CNF formuli i sadrži najkritičniju logiku za rad solvera. Testovima su pokriveni sledeći aspekti:
 
 - Inicijalizacija klauze i otkrivanje tautologija u fazi preprocesiranja (`preprocess`)
-- Provera stanja klauze — da li je jedinična (`is_unit`) ili prazna (`is_empty`)
-- Boolean Constraint Propagation (`bcp`) — zadovoljavanje i falsifikovanje literala,
+- Provera stanja klauze - da li je jedinična (`is_unit`) ili prazna (`is_empty`)
+- Boolean Constraint Propagation (`bcp`) - zadovoljavanje i falsifikovanje literala,
   kao i detekcija konflikta kada klauza ostane bez aktivnih literala
 - Vraćanje klauze na prethodno stanje tokom backtrackinga (`restore`)
-- TODO dodati jos ?
+- Postavljanje nivoa odluke i sortiranje literala (`set_decision_levels`)
+- Dohvatanje literala dodeljenih na zadatom nivou odluke (`literal_at_level`)
+- Izračunavanje nivoa na koji treba da se vrati pretraga (`get_backtrack_level`)
+- Operacija rezolucije dve klauze po zadatom literalu (`resolution_operate`)
+- Potpuno restartovanje klauze na početno stanje (`restart`)
 
 Tokom testiranja uočena je jedna nepravilnost - prilikom preprocesiranja, ukoliko je u pitanju tautologična klauza, vrednost se postavljana 1 (tačno) i veličina na 0. Međutim, u konstruktoru se veličina postavlja na dužinu niza klauze nakon poziva funkcije preprocess, i time se "obriše" to što je prilikom preprocesiranja postavljena na 0.
+
+Nakon pokretanja testova komandom:
+```bash
+pytest tests/unit/test_clause.py -v
+```
+(opcija -v da bi ispis bio detaljniji)
+
+dobija se sledeći izlaz:
+
+![Izlaz iz terminala nakon pokretanja unit testova za klasu Clause](./images/test_clause_verbose.png)
+
+Svih 28 testova je uspešno prošlo.
 
 ### Klasa `Implication_Graph`
 Klasa `Implication_Graph` predstavlja graf implikacija koji se gradi tokom pretrage i koristi se za analizu konflikata i backtracking u CDCL algoritmu. Za svaki dodeljeni literal pamti se antecedent (klauza koja je uzrokovala dodelu) i nivo odluke na kom je literal dodeljen.
@@ -74,34 +90,31 @@ Testovima su pokriveni sledeći aspekti:
 - Dodavanje jednog i više čvorova u graf (`add_node`) i provera ispravnosti upisanih podataka
 - Uklanjanje čvorova pozitivnim i negativnim oblikom literala (`remove_node`), kao i pokušaj uklanjanja nepostojećeg čvora
 - Provera da uklanjanje jednog čvora ne utiče na ostale čvorove u grafu
-- Backtracking na zadati nivo odluke (`backtrack`) — uklanjanje svih literala dodeljenih na višem nivou, uz zadržavanje onih na nižem
+- Backtracking na zadati nivo odluke (`backtrack`) - uklanjanje svih literala dodeljenih na višem nivou, uz zadržavanje onih na nižem
 - Backtracking nad praznim grafom i višestruki backtracking
 - Dohvatanje antecedenta postojećeg i nepostojećeg literala (`get_antecedent`), uključujući slučaj kružnih referenci između čvorova (todo msm da nije potrebno to kruzno po specifikaciji?)
 
 #### Klasa `Lazy_Clause`
 koristi postojecu implication graph klasu
 
-### Klasa ... (dodati ostale klase)
 
-### Pokretanje testova
+## Pokrivenost koda - Coverage.py
+Pokrivenost koda testovima merena je alatom **Coverage.py**, koji prati (po defaultu) koje linije koda su izvršene tokom testiranja.
 
-Testovi se pokreću naredbom:
 
+### Pokrivenost klase `Clause`
+Pokrivenost fajla `clause.py` jediničnim testovima merena je komandom:
 ```bash
-pytest tests/unit
+pytest tests/unit/test_clause.py --cov=clause --cov-report=html
 ```
-### Izlaz testova
+Detaljan izveštaj nalazi se u `clause_coverage/index.html`.
 
-Nakon pokretanja testova, `pytest` prikazuje rezultate izvršavanja, uključujući:
+![Izveštaj pokrivenosti za klasu Clause](./images/clause_coverage.png)
 
-- broj uspešno izvršenih testova,
-- eventualne greške,
-- vreme izvršavanja.
+Ukupna pokrivenost iznosi **97%**. Nepokrivene linije su:
 
-TODO dodati sliku nakon pokretanja
-
-## Pokrivenost koda
-TODO - videti da l da radim sa svim testovima ili odvojeno unit/integration
+- `elif x > m2` grana u metodi `get_backtrack_level` - analizom koda utvrđeno je da je ova grana nedostižna jer Python iterira nad `set` kolekcijom u rastućem redosledu za cele brojeve, pa svaki naredni element uvek zadovoljava uslov `x >= m1`, a nikad samo `x > m2`.
+- `print` naredba u metodi `print_info` - ova metoda služi isključivo za debagovanje i nije pozivana u testovima jer njen izlaz nije deo funkcionalnosti koja se testira.
 
 ## Statička analiza - Pylint
 Pylint je alat za statičku analizu Python koda koji proverava stil, kvalitet i potencijalne greške bez pokretanja programa.  Može se instalirati komandom:
@@ -116,10 +129,10 @@ Analiza je sprovedena nad glavnim fajlom solvera `cdcl_solver.py`, a ukupna ocen
 
 Pylint klasifikuje probleme prema prefiksu u oznaci:
 - **F** (Fatal) - fatalna greška koja je sprečila Pylint da nastavi analizu
-- **E** (Error) — greške koje verovatno uzrokuju probleme pri izvršavanju
-- **W** (Warning) — upozorenja na potencijalne greške
-- **C** (Convention) — kršenje konvencija stila pisanja koda
-- **R** (Refactor) — predlozi za poboljšanje strukture koda
+- **E** (Error) - greške koje verovatno uzrokuju probleme pri izvršavanju
+- **W** (Warning) - upozorenja na potencijalne greške
+- **C** (Convention) - kršenje konvencija stila pisanja koda
+- **R** (Refactor) - predlozi za poboljšanje strukture koda
 
 Komanda za pokretanje:
 ```bash
@@ -132,13 +145,13 @@ izlaz:
 Opisi problema su prilično informativni tako da se može lako razumeti gde je nastao koji problem.
 ### Pronađeni problemi
 
-**Stilski problemi (C)** su najbrojniji. Dominiraju `trailing-whitespace` upozorenja — višak belina na kraju linija koda, kao i nekoliko `line-too-long` upozorenja gde linije prelaze dozvoljenih 100 karaktera. Pored toga, nedostaju docstringovi (tekstualni opisi) za modul, klasu i sve metode (`missing-module-docstring`, `missing-class-docstring`, `missing-function-docstring`). Takođe je uočen pogrešan redosled importa — standardne biblioteke (`random`, `time`) treba da budu importovane pre biblioteka trećih strana.
+**Stilski problemi (C)** su najbrojniji. Dominiraju `trailing-whitespace` upozorenja - višak belina na kraju linija koda, kao i nekoliko `line-too-long` upozorenja gde linije prelaze dozvoljenih 100 karaktera. Pored toga, nedostaju docstringovi (tekstualni opisi) za modul, klasu i sve metode (`missing-module-docstring`, `missing-class-docstring`, `missing-function-docstring`). Takođe je uočen pogrešan redosled importa - standardne biblioteke (`random`, `time`) treba da budu importovane pre biblioteka trećih strana.
 
-**Upozorenja (W)** ukazuju na tri nekorišćena importa: `numpy`, `random` i `Lazy_Clause` su importovani ali se nigde ne koriste u fajlu. Prisutna su i dva `fixme` upozorenja koja odgovaraju TODO komentarima u kodu — njihovo prisustvo u finalnoj verziji koda nije poželjno jer ukazuje na nedovršenu implementaciju i može zbuniti buduće čitaoce koda.
+**Upozorenja (W)** ukazuju na tri nekorišćena importa: `numpy`, `random` i `Lazy_Clause` su importovani ali se nigde ne koriste u fajlu. Prisutna su i dva `fixme` upozorenja koja odgovaraju TODO komentarima u kodu - njihovo prisustvo u finalnoj verziji koda nije poželjno jer ukazuje na nedovršenu implementaciju i može zbuniti buduće čitaoce koda.
 
-**Predlozi za refaktorisanje (R)** ukazuju na strukturne probleme: klasa `CDCL_Solver` ima previše atributa (16, dok je preporučeno maksimalno 7), glavna metoda solvera ima previše grana (19) i previše naredbi (68), što ukazuje na visoku složenost koja otežava čitanje i testiranje. Takođe je uočen `no-else-return` — nepotrebna `else` grana nakon `return` naredbe.
+**Predlozi za refaktorisanje (R)** ukazuju na strukturne probleme: klasa `CDCL_Solver` ima previše atributa (16, dok je preporučeno maksimalno 7), glavna metoda solvera ima previše grana (19) i previše naredbi (68), što ukazuje na visoku složenost koja otežava čitanje i testiranje. Takođe je uočen `no-else-return` - nepotrebna `else` grana nakon `return` naredbe.
 
-**Imenovanje** — ime klase `CDCL_Solver` ne prati Python konvenciju PascalCase (trebalo bi biti `CDCLSolver`).
+**Imenovanje** - ime klase `CDCL_Solver` ne prati Python konvenciju PascalCase (trebalo bi biti `CDCLSolver`).
 
 ### Zaključak
 
@@ -168,14 +181,14 @@ TODO
 
 izadje mi prozor koji mi nije jasan - vrv treba pokrenuti cProfile nad nekim drugim fajlom
 
-## Analiza složenosti koda — Radon
+## Analiza složenosti koda - Radon
 
 Radon je Python alat koji izračunava različite metrike koda. Podržane metrike su:
 
-- **Raw metrike** — broj linija izvornog koda, linija komentara i praznih linija
+- **Raw metrike** - broj linija izvornog koda, linija komentara i praznih linija
 - **Ciklomatska složenost** - meri broj nezavisnih putanja kroz kod
-- **Halstead metrike** — mere složenost na osnovu operatora i operanada u kodu
-- **Maintainability Index** — metrika koja ocenjuje održivost koda vrednošću od 0 do 100
+- **Halstead metrike** - mere složenost na osnovu operatora i operanada u kodu
+- **Maintainability Index** - metrika koja ocenjuje održivost koda vrednošću od 0 do 100
 
 Može se instalirati komandom:
 ```bash
@@ -183,10 +196,10 @@ pip install radon
 ```
 
 Radon ima više komandi, od kojih svaka meri drugačiju metriku:
-- `raw` — raw metrike
-- `cc` — ciklomatska složenost
-- `hal` — Halstead metrike
-- `mi` — Maintainability Index
+- `raw` - raw metrike
+- `cc` - ciklomatska složenost
+- `hal` - Halstead metrike
+- `mi` - Maintainability Index
 
 Opšti oblik komande je:
 ```bash
@@ -196,7 +209,7 @@ gde `-a` prikazuje prosečnu složenost na kraju, a `-s` prikazuje ocenu (A, B, 
 
 ### Ciklomatska složenost
 
-Ciklomatska složenost meri broj nezavisnih putanja kroz kod — što je veći broj, kod je teže testirati i održavati.
+Ciklomatska složenost meri broj nezavisnih putanja kroz kod - što je veći broj, kod je teže testirati i održavati.
 
 Analiza je sprovedena nad svim fajlovima projekta komandom:
 ```bash
@@ -206,7 +219,7 @@ Detaljan izveštaj sa složenošću svake metode i klase sačuvan je u fajlu `ra
 
 Ukupno je analizirano 103 bloka (klase, funkcije i metode), a prosečna složenost iznosi **B (5.62)**, što je generalno prihvatljivo. Međutim, izdvajaju se dva kritična slučaja:
 
-- `CDCL_Solver.solve` u `cdcl_solver.py` dobila je ocenu **E (35)** — ovo je glavna metoda solvera koja implementira celokupan CDCL algoritam i sadrži veliki broj grananja, što je u skladu sa Pylint nalazom o previše grana i naredbi u istoj metodi.
+- `CDCL_Solver.solve` u `cdcl_solver.py` dobila je ocenu **E (35)** - ovo je glavna metoda solvera koja implementira celokupan CDCL algoritam i sadrži veliki broj grananja, što je u skladu sa Pylint nalazom o previše grana i naredbi u istoj metodi.
 
 - `Lazy_Clause.bcp` u `cnf_data_structure.py` dobila je ocenu **E (31)**, a ista metoda u zasebnom fajlu `lazy_clause.py` ocenu **D (29)**. Ova metoda ima tri glavne grane u zavisnosti od veličine klauze, sa dodatnim grananjem unutar svake.
 
