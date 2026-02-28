@@ -146,3 +146,68 @@ Većina pronađenih problema su stilske prirode i ne utiču na ispravnost progra
 Međutim, upozorenja o nekorišćenim importima i previsokoj složenosti glavne metode solvera su vredni pažnje - nekorišćeni importi povećavaju nepotrebne zavisnosti, a visoka složenost glavne metode direktno otežava testiranje i održavanje.
 
 TODO pokrenuti eventualno nad nekim drugim fajlom
+
+
+## Profajliranje - cProfile
+ugradjen u python
+komanda za pokretanje:
+
+python -m cProfile [-o output_file] [-s sort_order] myscript.py
+
+
+python3 -m cProfile -o profileFile.prof -s cumulative ./CDCL-based-SAT-Solver/main.py -i ./tests/integration/unsat.cnf
+
+sad fajl koji sam dobila profileFile.prof ubacim u snakeviz ili pyprof2calltree da bih bolje vizualizovala
+
+http://pypi.org/project/pyprof2calltree/
+instaliram pyprof2calltree i qcachegrind
+
+pyprof2calltree -i profileFile.prof -k
+
+TODO
+
+izadje mi prozor koji mi nije jasan - vrv treba pokrenuti cProfile nad nekim drugim fajlom
+
+## Analiza složenosti koda — Radon
+
+Radon je Python alat koji izračunava različite metrike koda. Podržane metrike su:
+
+- **Raw metrike** — broj linija izvornog koda, linija komentara i praznih linija
+- **Ciklomatska složenost** - meri broj nezavisnih putanja kroz kod
+- **Halstead metrike** — mere složenost na osnovu operatora i operanada u kodu
+- **Maintainability Index** — metrika koja ocenjuje održivost koda vrednošću od 0 do 100
+
+Može se instalirati komandom:
+```bash
+pip install radon
+```
+
+Radon ima više komandi, od kojih svaka meri drugačiju metriku:
+- `raw` — raw metrike
+- `cc` — ciklomatska složenost
+- `hal` — Halstead metrike
+- `mi` — Maintainability Index
+
+Opšti oblik komande je:
+```bash
+radon [opcija] folder [-a] [-s]
+```
+gde `-a` prikazuje prosečnu složenost na kraju, a `-s` prikazuje ocenu (A, B, C...) uz svaki blok.
+
+### Ciklomatska složenost
+
+Ciklomatska složenost meri broj nezavisnih putanja kroz kod — što je veći broj, kod je teže testirati i održavati.
+
+Analiza je sprovedena nad svim fajlovima projekta komandom:
+```bash
+radon cc ./CDCL-based-SAT-Solver -a -s > radon_output.txt
+```
+Detaljan izveštaj sa složenošću svake metode i klase sačuvan je u fajlu `radon_output.txt`.
+
+Ukupno je analizirano 103 bloka (klase, funkcije i metode), a prosečna složenost iznosi **B (5.62)**, što je generalno prihvatljivo. Međutim, izdvajaju se dva kritična slučaja:
+
+- `CDCL_Solver.solve` u `cdcl_solver.py` dobila je ocenu **E (35)** — ovo je glavna metoda solvera koja implementira celokupan CDCL algoritam i sadrži veliki broj grananja, što je u skladu sa Pylint nalazom o previše grana i naredbi u istoj metodi.
+
+- `Lazy_Clause.bcp` u `cnf_data_structure.py` dobila je ocenu **E (31)**, a ista metoda u zasebnom fajlu `lazy_clause.py` ocenu **D (29)**. Ova metoda ima tri glavne grane u zavisnosti od veličine klauze, sa dodatnim grananjem unutar svake.
+
+Ostatak koda je većinom ocenjen ocenama A i B, što ukazuje da su ostale komponente projekta dobro strukturirane. Visoka složenost je koncentrisana u metodama koje implementiraju centralnu logiku algoritma, što je delimično očekivano s obzirom na prirodu CDCL algoritma.
