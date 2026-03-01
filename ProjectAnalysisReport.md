@@ -92,7 +92,7 @@ Testovima su pokriveni sledeći aspekti:
 - Provera da uklanjanje jednog čvora ne utiče na ostale čvorove u grafu
 - Backtracking na zadati nivo odluke (`backtrack`) - uklanjanje svih literala dodeljenih na višem nivou, uz zadržavanje onih na nižem
 - Backtracking nad praznim grafom i višestruki backtracking
-- Dohvatanje antecedenta postojećeg i nepostojećeg literala (`get_antecedent`), uključujući slučaj kružnih referenci između čvorova (todo msm da nije potrebno to kruzno po specifikaciji?)
+- Dohvatanje prethodnika postojećeg i nepostojećeg literala (`get_antecedent`), uključujući slučaj kružnih referenci između čvorova (todo msm da nije potrebno to kruzno po specifikaciji?)
 
 Nakon pokretanja testova komandom:
 ```bash
@@ -113,7 +113,6 @@ Pokrivenost fajla `clause.py` jediničnim testovima merena je komandom:
 ```bash
 pytest tests/unit/test_clause.py --cov=clause --cov-report=html
 ```
-Detaljan izveštaj nalazi se u `coverage/clause_coverage/index.html`.
 
 ![Izveštaj pokrivenosti za klasu Clause](./images/clause_coverage.png)
 
@@ -128,7 +127,7 @@ Pokrivenost fajla `implication_graph.py` jediničnim testovima merena je komando
 ```bash
 pytest tests/unit/test_implication_graph.py --cov=implication_graph --cov-report=html
 ```
-Detaljan izveštaj nalazi se u `coverage/implication_graph_coverage/index.html`.
+
 
 ![Izveštaj pokrivenosti za klasu Implication_Graph](./images/implication_graph_coverage.png)
 
@@ -144,7 +143,7 @@ pytest tests/integration/test_integration.py --cov=cdcl_solver --cov=clause --co
 
 Za razliku od jediničnih testova koji mere pokrivenost pojedinačnih klasa, integracioni testovi pokreću ceo solver, pa ima smisla meriti pokrivenost svih fajlova projekta zajedno.
 
-Detaljan izveštaj nalazi se u `coverage/integration_coverage/index.html`.
+
 
 ![Izveštaj pokrivenosti za integracione testove](./images/integration_coverage.png)
 
@@ -156,7 +155,6 @@ Pokrivenost merena svim testovima zajedno (jediničnim i integracionim):
 ```bash
 pytest tests/ --cov=cdcl_solver --cov=clause --cov=cnf --cov=dimacs_parser --cov=implication_graph --cov=lazy_clause --cov-report=html
 ```
-Detaljan izveštaj nalazi se u `coverage/total_coverage/index.html`.
 
 ![Ukupna pokrivenost](./images/total_coverage.png)
 
@@ -205,28 +203,6 @@ Opisi problema su prilično informativni tako da se može lako razumeti gde je n
 Većina pronađenih problema su stilske prirode i ne utiču na ispravnost programa. 
 Međutim, upozorenja o nekorišćenim importima i previsokoj složenosti glavne metode solvera su vredni pažnje - nekorišćeni importi povećavaju nepotrebne zavisnosti, a visoka složenost glavne metode direktno otežava testiranje i održavanje.
 
-TODO pokrenuti eventualno nad nekim drugim fajlom
-
-
-## Profajliranje - cProfile
-ugradjen u python
-komanda za pokretanje:
-
-python -m cProfile [-o output_file] [-s sort_order] myscript.py
-
-
-python3 -m cProfile -o profileFile.prof -s cumulative ./CDCL-based-SAT-Solver/main.py -i ./tests/integration/unsat.cnf
-
-sad fajl koji sam dobila profileFile.prof ubacim u snakeviz ili pyprof2calltree da bih bolje vizualizovala
-
-http://pypi.org/project/pyprof2calltree/
-instaliram pyprof2calltree i qcachegrind
-
-pyprof2calltree -i profileFile.prof -k
-
-TODO
-
-izadje mi prozor koji mi nije jasan - vrv treba pokrenuti cProfile nad nekim drugim fajlom
 
 ## Analiza složenosti koda - Radon
 
@@ -271,3 +247,50 @@ Ukupno je analizirano 103 bloka (klase, funkcije i metode), a prosečna složeno
 - `Lazy_Clause.bcp` u `cnf_data_structure.py` dobila je ocenu **E (31)**, a ista metoda u zasebnom fajlu `lazy_clause.py` ocenu **D (29)**. Ova metoda ima tri glavne grane u zavisnosti od veličine klauze, sa dodatnim grananjem unutar svake.
 
 Ostatak koda je većinom ocenjen ocenama A i B, što ukazuje da su ostale komponente projekta dobro strukturirane. Visoka složenost je koncentrisana u metodama koje implementiraju centralnu logiku algoritma, što je delimično očekivano s obzirom na prirodu CDCL algoritma.
+
+## Profajliranje - cProfile
+cProfile je ugrađeni Python alat za profajliranje koji meri vreme izvršavanja i broj poziva svake funkcije.
+
+### Pokretanje
+
+Profajliranje je sprovedeno nad većim UNSAT primerom (`large_unsat.cnf`) sa 100 promenljivih i 160 klauza, koji dobro oslikava rad programa jer solver mora da istraži veći prostor pretrage pre nego što zaključi da formula nema rešenje.
+
+Izlaz je sačuvan u `.prof` fajl komandom:
+```bash
+python3 -m cProfile -s cumulative -o profileFile.prof ./CDCL-based-SAT-Solver/main.py -i ./tests/integration/large_unsat.cnf
+```
+
+gde `-s cumulative` sortira funkcije po ukupnom vremenu izvršavanja, a `-o` čuva izlaz u `.prof` fajl.
+
+### Vizualizacija - pyprof2calltree i KCachegrind
+
+`.prof` fajl je vizualizovan pomoću alata `pyprof2calltree`.
+
+Instalacija:
+```bash
+pip install pyprof2calltree
+# Linux:
+sudo apt install kcachegrind
+# Mac:
+brew install qcachegrind
+```
+
+Pokretanje:
+```bash
+pyprof2calltree -i profileFile.prof -k
+```
+
+### Rezultati
+
+Funkcije projekta sortirane po ukupnom vremenu izvršavanja:
+
+![izlaz](./images/profile_report.png)
+
+Na slici je prikazan flat profile tj. lista funkcija sortiranih po ukupnom vremenu izvršavanja (`Incl.`). Kolona `Incl.` predstavlja ukupno vreme koje funkcija troši uključujući sve funkcije koje ona poziva, dok kolona `Self` prikazuje vreme koje funkcija troši isključivo na sopstveni kod, bez poziva podfunkcija. Kolona `Called` prikazuje broj puta koliko je funkcija pozvana tokom izvršavanja.
+
+Na vrhu liste nalazi se `<cycle 8>` koji nije deo stvarne logike programa i može se ignorisati. Odmah ispod je `main.py` što je i očekivano jer ona poziva sve ostale funkcije. Zatim `cdcl_solver.solve` koja dominira stvarnim vremenom rada programa. Dalje slede `cnf.bcp` i 
+`lazy_clause.bcp` kao najzastupljenije funkcije po broju poziva i vremenu, što potvrđuje da je BCP centralna operacija u CDCL algoritmu.
+
+Posebno je interesantno da `lazy_clause.bcp` ima visoku vrednost i u `Self` koloni (27.85%), što znači da funkcija troši značajno vreme na sopstveni kod, a ne samo na podfunkcije koje poziva. Ovo je u skladu sa Radon analizom koja je ovu metodu ocenila visokom složenošću (ocena D, vrednost 29) - složena logika sa mnogo grananja direktno se odražava na vreme izvršavanja.
+
+S obzirom na to da `lazy_clause.bcp` troši značajan deo ukupnog vremena izvršavanja i poziva se mnogo puta, svako poboljšanje efikasnosti ove funkcije direktno bi se odrazilo na performanse celog programa.
