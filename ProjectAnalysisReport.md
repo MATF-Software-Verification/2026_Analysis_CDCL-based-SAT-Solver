@@ -94,20 +94,26 @@ Testovima su pokriveni sledeći aspekti:
 - Backtracking nad praznim grafom i višestruki backtracking
 - Dohvatanje antecedenta postojećeg i nepostojećeg literala (`get_antecedent`), uključujući slučaj kružnih referenci između čvorova (todo msm da nije potrebno to kruzno po specifikaciji?)
 
-#### Klasa `Lazy_Clause`
-koristi postojecu implication graph klasu
+Nakon pokretanja testova komandom:
+```bash
+pytest tests/unit/test_implication_graph.py -v
+```
 
+dobija se sledeći izlaz:
+
+![Izlaz iz terminala nakon pokretanja unit testova za klasu Implication_Graph](./images/test_implication_graph_verbose.png)
+
+Svih 14 testova je uspešno prošlo.
 
 ## Pokrivenost koda - Coverage.py
 Pokrivenost koda testovima merena je alatom **Coverage.py**, koji prati (po defaultu) koje linije koda su izvršene tokom testiranja.
-
 
 ### Pokrivenost klase `Clause`
 Pokrivenost fajla `clause.py` jediničnim testovima merena je komandom:
 ```bash
 pytest tests/unit/test_clause.py --cov=clause --cov-report=html
 ```
-Detaljan izveštaj nalazi se u `clause_coverage/index.html`.
+Detaljan izveštaj nalazi se u `coverage/clause_coverage/index.html`.
 
 ![Izveštaj pokrivenosti za klasu Clause](./images/clause_coverage.png)
 
@@ -116,12 +122,53 @@ Ukupna pokrivenost iznosi **97%**. Nepokrivene linije su:
 - `elif x > m2` grana u metodi `get_backtrack_level` - analizom koda utvrđeno je da je ova grana nedostižna jer Python iterira nad `set` kolekcijom u rastućem redosledu za cele brojeve, pa svaki naredni element uvek zadovoljava uslov `x >= m1`, a nikad samo `x > m2`.
 - `print` naredba u metodi `print_info` - ova metoda služi isključivo za debagovanje i nije pozivana u testovima jer njen izlaz nije deo funkcionalnosti koja se testira.
 
+### Pokrivenost klase `Implication_Graph`
+
+Pokrivenost fajla `implication_graph.py` jediničnim testovima merena je komandom:
+```bash
+pytest tests/unit/test_implication_graph.py --cov=implication_graph --cov-report=html
+```
+Detaljan izveštaj nalazi se u `coverage/implication_graph_coverage/index.html`.
+
+![Izveštaj pokrivenosti za klasu Implication_Graph](./images/implication_graph_coverage.png)
+
+Ukupna pokrivenost iznosi **100%** - sve linije koda klase `Implication_Graph` su pokrivene jediničnim testovima.
+
+
+### Pokrivenost integracionih testova
+
+Pokrivenost koda integracionim testovima merena je komandom:
+```bash
+pytest tests/integration/test_integration.py --cov=cdcl_solver --cov=clause --cov=cnf --cov=dimacs_parser --cov=implication_graph --cov=lazy_clause  --cov-report=html
+```
+
+Za razliku od jediničnih testova koji mere pokrivenost pojedinačnih klasa, integracioni testovi pokreću ceo solver, pa ima smisla meriti pokrivenost svih fajlova projekta zajedno.
+
+Detaljan izveštaj nalazi se u `coverage/integration_coverage/index.html`.
+
+![Izveštaj pokrivenosti za integracione testove](./images/integration_coverage.png)
+
+Ukupna pokrivenost iznosi **84%**. Najniža pokrivenost je kod `clause.py` sa svega 48%. Pokrivenost ostalih komponenti je prilično visoka.
+
+### Ukupna pokrivenost
+
+Pokrivenost merena svim testovima zajedno (jediničnim i integracionim):
+```bash
+pytest tests/ --cov=cdcl_solver --cov=clause --cov=cnf --cov=dimacs_parser --cov=implication_graph --cov=lazy_clause --cov-report=html
+```
+Detaljan izveštaj nalazi se u `coverage/total_coverage/index.html`.
+
+![Ukupna pokrivenost](./images/total_coverage.png)
+
+Ukupna pokrivenost iznosi **92%**. Kombinovanjem jediničnih i integracionih testova pokrivenost `clause.py` je porasla sa 48% na 97%, što potvrđuje da se jedinični i integracioni testovi međusobno dopunjuju. Jedini fajl sa nešto nižom pokrivenošću je `cdcl_solver.py` (87%), što je i dalje dobar rezultat uzimajući u obzir da je ovo najkompleksniji fajl u projektu. 
+
+Ukupna pokrivenost od 92% predstavlja odličan rezultat i ukazuje da testovi dobro pokrivaju funkcionalnost projekta.
+
 ## Statička analiza - Pylint
 Pylint je alat za statičku analizu Python koda koji proverava stil, kvalitet i potencijalne greške bez pokretanja programa.  Može se instalirati komandom:
 ```bash
 pip install pylint
 ```
-Zvanična dokumentacija dostupna je na: https://pylint.readthedocs.io/en/stable/
 
 Analiza je sprovedena nad glavnim fajlom solvera `cdcl_solver.py`, a ukupna ocena iznosi **6.23/10**.
 
