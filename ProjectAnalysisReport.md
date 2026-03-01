@@ -15,34 +15,32 @@ Svaki test proverava da li je data formula zadovoljiva (SAT) ili nezadovoljiva (
 
 Test primeri u folderu `/all_sat` preuzeti su sa sajta:  
 https://www.cs.ubc.ca/~hoos/SATLIB/benchm.html
+Test primer `large_unsat.cnf` preuzet je sa sajta: https://people.sc.fsu.edu/~jburkardt/data/cnf/aim-100-1_6-no-1.cnf
 
 Integracionim testovima pokriveni su sledeći slučajevi:
-TODO DODATI JOS TESTOVA
 - Obične zadovoljive formule (SAT)
 - Obične nezadovoljive formule (UNSAT)
+- Velike zadovoljive formule
+- Velike nezadovoljive formule
 - Specijalni slučajevi:
   - Prazna formula
-  - Prazna klauza
-  - Formule sa jednom promenljivom
+  - Formula sa jednom promenljivom
+  - Formula gde su sve klauze jedinicne i pozitivne
+  - Formula gde su sve klauze jedinicne i negativne
+  - Lanac implikacija
 
 Pokretanje integracionih testova vrši se pomoću skripte `test_integration.py`, koja prolazi kroz sve test fajlove i pokreće solver nad njima.
 
-### Pokretanje testova
-
-Testovi se pokreću naredbom:
-
+Nakon pokretanja testova komandom:
 ```bash
-pytest tests/integration
+pytest tests/integration -v
 ```
-### Izlaz testova
+(opcija -v da bi ispis bio detaljniji)
 
-Nakon pokretanja testova, `pytest` prikazuje rezultate izvršavanja, uključujući:
+dobija se sledeći izlaz:
 
-- broj uspešno izvršenih testova,
-- eventualne greške,
-- vreme izvršavanja.
-
-Ovaj pristup omogućava jednostavnu reprodukciju testova i proveru funkcionalnosti kompletnog sistema.
+![Izlaz iz terminala nakon pokretanja integracionih testova](./images/integration_tests_output_verbose.png)
+Svih 10 testova je uspešno prošlo za 0.24 sekunde.
 
 ## Jedinično testiranje
 
@@ -74,13 +72,12 @@ Nakon pokretanja testova komandom:
 ```bash
 pytest tests/unit/test_clause.py -v
 ```
-(opcija -v da bi ispis bio detaljniji)
 
 dobija se sledeći izlaz:
 
 ![Izlaz iz terminala nakon pokretanja unit testova za klasu Clause](./images/test_clause_verbose.png)
 
-Svih 28 testova je uspešno prošlo.
+Svih 28 testova je uspešno prošlo za 0.02 sekunde.
 
 ### Klasa `Implication_Graph`
 Klasa `Implication_Graph` predstavlja graf implikacija koji se gradi tokom pretrage i koristi se za analizu konflikata i backtracking u CDCL algoritmu. Za svaki dodeljeni literal pamti se antecedent (klauza koja je uzrokovala dodelu) i nivo odluke na kom je literal dodeljen.
@@ -92,7 +89,7 @@ Testovima su pokriveni sledeći aspekti:
 - Provera da uklanjanje jednog čvora ne utiče na ostale čvorove u grafu
 - Backtracking na zadati nivo odluke (`backtrack`) - uklanjanje svih literala dodeljenih na višem nivou, uz zadržavanje onih na nižem
 - Backtracking nad praznim grafom i višestruki backtracking
-- Dohvatanje prethodnika postojećeg i nepostojećeg literala (`get_antecedent`), uključujući slučaj kružnih referenci između čvorova (todo msm da nije potrebno to kruzno po specifikaciji?)
+- Dohvatanje prethodnika postojećeg i nepostojećeg literala (`get_antecedent`), uključujući slučaj kružnih referenci između čvorova
 
 Nakon pokretanja testova komandom:
 ```bash
@@ -103,7 +100,7 @@ dobija se sledeći izlaz:
 
 ![Izlaz iz terminala nakon pokretanja unit testova za klasu Implication_Graph](./images/test_implication_graph_verbose.png)
 
-Svih 14 testova je uspešno prošlo.
+Svih 14 testova je uspešno prošlo za 0.02 sekunde.
 
 ## Pokrivenost koda - Coverage.py
 Pokrivenost koda testovima merena je alatom **Coverage.py**, koji prati (po defaultu) koje linije koda su izvršene tokom testiranja.
@@ -147,7 +144,7 @@ Za razliku od jediničnih testova koji mere pokrivenost pojedinačnih klasa, int
 
 ![Izveštaj pokrivenosti za integracione testove](./images/integration_coverage.png)
 
-Ukupna pokrivenost iznosi **84%**. Najniža pokrivenost je kod `clause.py` sa svega 48%. Pokrivenost ostalih komponenti je prilično visoka.
+Ukupna pokrivenost iznosi **85%**. Najniža pokrivenost je kod `clause.py` sa svega 48%. Pokrivenost ostalih komponenti je prilično visoka.
 
 ### Ukupna pokrivenost
 
@@ -158,9 +155,9 @@ pytest tests/ --cov=cdcl_solver --cov=clause --cov=cnf --cov=dimacs_parser --cov
 
 ![Ukupna pokrivenost](./images/total_coverage.png)
 
-Ukupna pokrivenost iznosi **92%**. Kombinovanjem jediničnih i integracionih testova pokrivenost `clause.py` je porasla sa 48% na 97%, što potvrđuje da se jedinični i integracioni testovi međusobno dopunjuju. Jedini fajl sa nešto nižom pokrivenošću je `cdcl_solver.py` (87%), što je i dalje dobar rezultat uzimajući u obzir da je ovo najkompleksniji fajl u projektu. 
+Ukupna pokrivenost iznosi **93%**. Kombinovanjem jediničnih i integracionih testova pokrivenost `clause.py` je porasla sa 48% na 97%, što potvrđuje da se jedinični i integracioni testovi međusobno dopunjuju.
 
-Ukupna pokrivenost od 92% predstavlja odličan rezultat i ukazuje da testovi dobro pokrivaju funkcionalnost projekta.
+Ukupna pokrivenost od 93% predstavlja odličan rezultat i ukazuje da testovi dobro pokrivaju funkcionalnost projekta.
 
 ## Statička analiza - Pylint
 Pylint je alat za statičku analizu Python koda koji proverava stil, kvalitet i potencijalne greške bez pokretanja programa.  Može se instalirati komandom:

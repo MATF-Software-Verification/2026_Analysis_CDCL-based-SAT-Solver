@@ -25,13 +25,6 @@ def test_unsat():
     print(f"File {file_path} solved with result: {result}")
     assert result==-1,f"File {file_path} expected SAT, got {result}"
 
-# def test_empty_clause():
-#     file_path = "empty_clause.cnf"
-#     solver = CDCL_Solver(file_path,verbose=True)
-#     result = solver.solve()()
-#     print(f"File {file_path} solved with result: {result}")
-#     assert result==-1,f"File {file_path} expected SAT, got {result}"
-
 def test_empty_formula():
     file_path = os.path.join(cnf_folder, "empty_formula.cnf")
     solver = CDCL_Solver(file_path,verbose=True)
@@ -52,3 +45,38 @@ def test_one_var_unsat():
     result = solver.solve()()
     print(f"File {file_path} solved with result: {result}")
     assert result==-1,f"File {file_path} expected SAT, got {result}"
+
+def test_large_unsat():
+    file_path = os.path.join(cnf_folder, "large_unsat.cnf")
+    solver = CDCL_Solver(file_path,verbose=True)
+    result = solver.solve()()
+    print(f"File {file_path} solved with result: {result}")
+    assert result==-1,f"File {file_path} expected SAT, got {result}"
+
+def test_all_negative():
+    file_path = os.path.join(cnf_folder, "all_negative.cnf")
+    solver = CDCL_Solver(file_path,verbose=True)
+    result = solver.solve()()
+    print(f"File {file_path} solved with result: {result}")
+    assert result==1,f"File {file_path} expected SAT, got {result}"
+
+def test_all_positive():
+    file_path = os.path.join(cnf_folder, "all_positive.cnf")
+    solver = CDCL_Solver(file_path,verbose=True)
+    result = solver.solve()()
+    print(f"File {file_path} solved with result: {result}")
+    assert result==1,f"File {file_path} expected SAT, got {result}"
+
+def test_chain_implications():
+    file_path = os.path.join(cnf_folder, "chain_implications.cnf")
+    solver = CDCL_Solver(file_path,verbose=True)
+    result = solver.solve()()
+    print(f"File {file_path} solved with result: {result}")
+    assert result==1,f"File {file_path} expected SAT, got {result}"
+
+def test_unit_clause_sat():
+    file_path = os.path.join(cnf_folder, "unit_clause_sat.cnf")
+    solver = CDCL_Solver(file_path,verbose=True)
+    result = solver.solve()()
+    print(f"File {file_path} solved with result: {result}")
+    assert result==1,f"File {file_path} expected SAT, got {result}"
