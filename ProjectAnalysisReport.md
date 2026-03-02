@@ -291,3 +291,34 @@ Na vrhu liste nalazi se `<cycle 8>` koji nije deo stvarne logike programa i mož
 Posebno je interesantno da `lazy_clause.bcp` ima visoku vrednost i u `Self` koloni (27.85%), što znači da funkcija troši značajno vreme na sopstveni kod, a ne samo na podfunkcije koje poziva. Ovo je u skladu sa Radon analizom koja je ovu metodu ocenila visokom složenošću (ocena D, vrednost 29) - složena logika sa mnogo grananja direktno se odražava na vreme izvršavanja.
 
 S obzirom na to da `lazy_clause.bcp` troši značajan deo ukupnog vremena izvršavanja i poziva se mnogo puta, svako poboljšanje efikasnosti ove funkcije direktno bi se odrazilo na performanse celog programa.
+
+
+## Merenje performansi - pytest-benchmark
+
+pytest-benchmark je plugin za pytest koji meri vreme izvršavanja testova i generiše detaljne statistike. 
+
+Instalacija:
+```bash
+pip install pytest-benchmark
+```
+
+Za razliku od običnih testova koji samo proveravaju ispravnost rezultata, benchmark testovi pokreću svaku funkciju više puta i mere statistike vremena izvršavanja — minimum, maksimum, srednju vrednost i standardnu devijaciju. 
+Na osnovu toga se može zaključiti koliko je solver efikasan na različitim ulazima.
+
+Benchmark testovi se nalaze u fajlu `tests/integration/test_benchmark.py` i uglavnom pokrivaju iste slučajeve kao integracioni testovi, s tim što je iz foldera `all_sat` uzet samo jedan reprezentativni primer (`large_sat`) jer su svi primeri u tom folderu slične veličine.
+
+Pokretanje:
+```bash
+pytest tests/integration/test_benchmark.py -v
+```
+
+### Rezultati
+
+![Izlaz benchmark testova](./images/test_benchmark.png)
+Vremena su izražena u mikrosekundama (us), što je naznačeno u zaglavlju tabele. 
+Kolone označavaju redom: minimalno, maksimalno i srednje vreme izvršavanja, standardnu devijaciju, medijanu, interkvartilni raspon, broj outlier-a, broj operacija u sekundi, broj pokretanja i broj iteracija po pokretanju.
+
+Rezultati pokazuju jasnu korelaciju između veličine ulaza i vremena rešavanja. 
+Jednostavni primeri završavaju za oko 70–135 mikrosekundi, dok `large_sat` traje u proseku **10ms**, a `large_unsat` čak **107ms** - više od 10 puta duže od SAT primera slične veličine. Ovo je očekivano ponašanje CDCL algoritma jer za UNSAT formulu solver mora da istraži ceo prostor pretrage pre nego što donese zaključak.
+
+Visoka standardna devijacija kod oba velika primera ukazuje na nedeterministično ponašanje solvera, što je posledica nasumičnog odabira referentnih literala (`refA` i `refB`) u klasi `Lazy_Clause`. Različiti odabiri referenci tokom pretrage mogu dovesti do veoma različitih putanja kroz prostor rešenja, pa samim tim i do različitih vremena izvršavanja.
