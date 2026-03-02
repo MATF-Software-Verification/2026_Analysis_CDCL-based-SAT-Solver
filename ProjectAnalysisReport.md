@@ -5,9 +5,16 @@ Sprovodi se analiza projekta koji je napisan u Python-u za rešavanje SAT proble
 Napomena: fajlovi iz originalnog projekta `dpll_solver.py` i `cnf_data_structure.py` se nigde ne koriste - trebalo bi biti obrisani. `dpll_solver.py` ima smisla jer prikazuje jednostavniji ali manje efikasan DPLL algoritam. Fajl `cnf_data_structure.py` je skroz nepotreban (dupliran kod).
 
 Primenjeni su sledeći alati za analizu projekta:
-...
+1. Integraciono testiranje - pytest
+2. Jedinično testiranje - pytest
+3. Pokrivenost koda - Coverage.py
+4. Statička analiza - Pylint
+5. Analiza složenosti - Radon
+6. Profajliranje - cProfile i pyprof2calltree
+7. Merenje performansi - pytest-benchmark
+8. todo
 
-## Integraciono testiranje
+## Integraciono testiranje - pytest
 
 Za proveru ispravnosti solver-a sprovedeno je integraciono testiranje.  
 Testovi su smešteni u folderu `tests/integration` i sadrže formule u DIMACS CNF formatu.  
@@ -33,7 +40,7 @@ Pokretanje integracionih testova vrši se pomoću skripte `test_integration.py`,
 
 Nakon pokretanja testova komandom:
 ```bash
-pytest tests/integration -v
+pytest tests/integration/test_integration.py -v
 ```
 (opcija -v da bi ispis bio detaljniji)
 
@@ -42,7 +49,7 @@ dobija se sledeći izlaz:
 ![Izlaz iz terminala nakon pokretanja integracionih testova](./images/integration_tests_output_verbose.png)
 Svih 10 testova je uspešno prošlo za 0.24 sekunde.
 
-## Jedinično testiranje
+## Jedinično testiranje - pytest
 
 Jedinično testiranje ima za cilj proveru ispravnosti pojedinačnih komponenti rešavača izolovano od ostatka sistema.  
 Ovaj tip testiranja omogućava rano otkrivanje grešaka i olakšava održavanje i dalji razvoj koda.
@@ -139,7 +146,6 @@ pytest tests/integration/test_integration.py --cov=cdcl_solver --cov=clause --co
 ```
 
 Za razliku od jediničnih testova koji mere pokrivenost pojedinačnih klasa, integracioni testovi pokreću ceo solver, pa ima smisla meriti pokrivenost svih fajlova projekta zajedno.
-
 
 
 ![Izveštaj pokrivenosti za integracione testove](./images/integration_coverage.png)
@@ -241,7 +247,7 @@ Ukupno je analizirano 103 bloka (klase, funkcije i metode), a prosečna složeno
 
 - `CDCL_Solver.solve` u `cdcl_solver.py` dobila je ocenu **E (35)** - ovo je glavna metoda solvera koja implementira celokupan CDCL algoritam i sadrži veliki broj grananja, što je u skladu sa Pylint nalazom o previše grana i naredbi u istoj metodi.
 
-- `Lazy_Clause.bcp` u `cnf_data_structure.py` dobila je ocenu **E (31)**, a ista metoda u zasebnom fajlu `lazy_clause.py` ocenu **D (29)**. Ova metoda ima tri glavne grane u zavisnosti od veličine klauze, sa dodatnim grananjem unutar svake.
+- `Lazy_Clause.bcp` u `lazy_clause.py` dobila je ocenu **D (29)**. Ova metoda ima tri glavne grane u zavisnosti od veličine klauze, sa dodatnim grananjem unutar svake. Ista metoda postoji i u fajlu `cnf_data_structure.py` (ocena **E (31)**), ali se taj fajl ne koristi u projektu.
 
 Ostatak koda je većinom ocenjen ocenama A i B, što ukazuje da su ostale komponente projekta dobro strukturirane. Visoka složenost je koncentrisana u metodama koje implementiraju centralnu logiku algoritma, što je delimično očekivano s obzirom na prirodu CDCL algoritma.
 
@@ -302,10 +308,10 @@ Instalacija:
 pip install pytest-benchmark
 ```
 
-Za razliku od običnih testova koji samo proveravaju ispravnost rezultata, benchmark testovi pokreću svaku funkciju više puta i mere statistike vremena izvršavanja — minimum, maksimum, srednju vrednost i standardnu devijaciju. 
+Za razliku od običnih testova koji samo proveravaju ispravnost rezultata, benchmark testovi pokreću svaku funkciju više puta i mere statistike vremena izvršavanja - minimum, maksimum, srednju vrednost i standardnu devijaciju. 
 Na osnovu toga se može zaključiti koliko je solver efikasan na različitim ulazima.
 
-Benchmark testovi se nalaze u fajlu `tests/integration/test_benchmark.py` i uglavnom pokrivaju iste slučajeve kao integracioni testovi, s tim što je iz foldera `all_sat` uzet samo jedan reprezentativni primer (`large_sat`) jer su svi primeri u tom folderu slične veličine.
+Benchmark testovi se nalaze u fajlu `tests/integration/test_benchmark.py` i uglavnom pokrivaju iste slučajeve kao integracioni testovi, s tim što je iz foldera `all_sat` uzet samo jedan reprezentativni primer jer su svi primeri u tom folderu slične veličine.
 
 Pokretanje:
 ```bash
@@ -319,6 +325,6 @@ Vremena su izražena u mikrosekundama (us), što je naznačeno u zaglavlju tabel
 Kolone označavaju redom: minimalno, maksimalno i srednje vreme izvršavanja, standardnu devijaciju, medijanu, interkvartilni raspon, broj outlier-a, broj operacija u sekundi, broj pokretanja i broj iteracija po pokretanju.
 
 Rezultati pokazuju jasnu korelaciju između veličine ulaza i vremena rešavanja. 
-Jednostavni primeri završavaju za oko 70–135 mikrosekundi, dok `large_sat` traje u proseku **10ms**, a `large_unsat` čak **107ms** - više od 10 puta duže od SAT primera slične veličine. Ovo je očekivano ponašanje CDCL algoritma jer za UNSAT formulu solver mora da istraži ceo prostor pretrage pre nego što donese zaključak.
+Jednostavni primeri završavaju za oko 70-135 mikrosekundi. `large_sat` (20 promenljivih, 91 klauza) traje u proseku **10ms**, a `large_unsat` (100 promenljivih, 160 klauza) čak **107ms**. Duže vreme izvršavanja `large_unsat` primera posledica je i veće formule i same prirode UNSAT problema - solver mora da istraži ceo prostor pretrage pre nego što donese zaključak, za razliku od SAT primera gde pronalazi rešenje čim naiđe na zadovoljavajuću valuaciju.
 
 Visoka standardna devijacija kod oba velika primera ukazuje na nedeterministično ponašanje solvera, što je posledica nasumičnog odabira referentnih literala (`refA` i `refB`) u klasi `Lazy_Clause`. Različiti odabiri referenci tokom pretrage mogu dovesti do veoma različitih putanja kroz prostor rešenja, pa samim tim i do različitih vremena izvršavanja.
