@@ -1,0 +1,1754 @@
+diff -ru ./CDCL-based-SAT-Solver/cdcl_solver.py /tmp/CDCL-based-SAT-Solver_formatted/cdcl_solver.py
+--- ./CDCL-based-SAT-Solver/cdcl_solver.py	2026-02-05 10:22:50
++++ /tmp/CDCL-based-SAT-Solver_formatted/cdcl_solver.py	2026-03-02 19:17:24
+@@ -2,13 +2,15 @@
+ import numpy as np
+ import random
+ import time
++
+ # from cnf_data_structure import Clause, CNF_Formula, Implication_Graph
+ from clause import Clause
+ from lazy_clause import Lazy_Clause
+ from cnf import CNF_Formula
+ from implication_graph import Implication_Graph
+ 
+-class CDCL_Solver: 
++
++class CDCL_Solver:
+     def __init__(self, input_cnf_file, verbose):
+         self.assert_mode = False
+         self.verbose = verbose
+@@ -23,9 +25,9 @@
+         self.conflict_count = 0
+         self.analysis_count = 0
+         self.restart_rate = 100
+-        self.is_sat = 0 
++        self.is_sat = 0
+         self.conflict = None
+-    
++
+     def restart(self):
+         # TODO : Implement other restart mechanisms
+         self.formula = CNF_Formula(self.list_clause)
+@@ -35,12 +37,12 @@
+         self.conflict_count = 0
+         self.is_sat = 0
+         self.conflict = None
+-    
+-    def conflict_analysis(self, conflict_clause): 
++
++    def conflict_analysis(self, conflict_clause):
+         # RETURN : learnt clause, and backtrack_level
+         self.analysis_count += 1
+         if self.analysis_count >= 100:
+-            # If conflict analysis is called too long => restart 
++            # If conflict analysis is called too long => restart
+             self.analysis_count = 0
+             return None, -100
+         w = conflict_clause
+@@ -49,10 +51,10 @@
+         if len(pool_literal) == 1:
+             self.analysis_count = 0
+             return w, w.get_backtrack_level()
+-        else: 
++        else:
+             i = 0
+             antecedent = None
+-            while i< len(pool_literal) and antecedent is None:
++            while i < len(pool_literal) and antecedent is None:
+                 conflict_literal = pool_literal[i]
+                 antecedent = self.graph.get_antecedent(-conflict_literal)
+                 i += 1
+@@ -75,14 +77,17 @@
+         i = 0
+         while i < len(pool_literal):
+             decision = pool_literal[i]
+-            if decision not in self.graph.assigned_vars and -decision not in self.graph.assigned_vars:
++            if (
++                decision not in self.graph.assigned_vars
++                and -decision not in self.graph.assigned_vars
++            ):
+                 break
+             i += 1
+         # if decision in self.graph.assigned_vars or -decision in self.graph.assigned_vars:
+-        #     def unassigned_criterion_sat(x): 
++        #     def unassigned_criterion_sat(x):
+         #         return (x not in self.graph.assigned_vars) and (-x not in self.graph.assigned_vars)
+         #     unassigned_variables = [x+1 for x in range(self.nvars) if unassigned_criterion_sat(x+1)]
+-        #     decision = random.choice(unassigned_variables)    
++        #     decision = random.choice(unassigned_variables)
+ 
+         assert decision not in self.graph.assigned_vars
+         assert -decision not in self.graph.assigned_vars
+@@ -91,26 +96,32 @@
+     def is_all_assigned(self):
+         return self.nvars == len(self.graph.assigned_vars)
+ 
+-    def solve(self): 
++    def solve(self):
+         stop = False
+         initial_time = time.time()
+-        self.is_sat, self.conflict =  self.formula.unit_propagate(self.decision_level, self.graph)
++        self.is_sat, self.conflict = self.formula.unit_propagate(
++            self.decision_level, self.graph
++        )
+         if self.verbose:
+-            print('=====================[  Search Statistics ]=====================')
+-            
+-        while self.is_sat == 0 and not stop: 
++            print("=====================[  Search Statistics ]=====================")
++
++        while self.is_sat == 0 and not stop:
+             assert self.formula.get_value() == self.is_sat
+             assert self.conflict is None
+-            assert not self.is_all_assigned() 
++            assert not self.is_all_assigned()
+             decision = self.pick_branching_variable()
+             self.nb_decisions += 1
+             self.decision_level += 1
+             self.graph.add_node(decision, None, self.decision_level)
+-            self.is_sat, self.conflict = self.formula.bcp(decision, self.decision_level, self.graph)
+-            
++            self.is_sat, self.conflict = self.formula.bcp(
++                decision, self.decision_level, self.graph
++            )
++
+             if self.is_sat == 0:
+                 assert not self.is_all_assigned()
+-                self.is_sat, self.conflict = self.formula.unit_propagate(self.decision_level, self.graph)
++                self.is_sat, self.conflict = self.formula.unit_propagate(
++                    self.decision_level, self.graph
++                )
+ 
+             if self.is_sat == 0:
+                 assert not self.is_all_assigned()
+@@ -124,9 +135,9 @@
+                 learnt_clause, backtrack_level = self.conflict_analysis(self.conflict)
+ 
+                 if backtrack_level == -100:
+-                    self.restart()      
+-                elif backtrack_level == -1 :
+-                    self.is_sat = -1 
++                    self.restart()
++                elif backtrack_level == -1:
++                    self.is_sat = -1
+                     stop = True
+                 else:
+                     self.formula.add_clause(learnt_clause)
+@@ -134,9 +145,11 @@
+                     self.graph.backtrack(backtrack_level)
+                     self.formula.backtrack(backtrack_level, self.graph)
+                     self.decision_level = backtrack_level
+-                    self.is_sat, self.conflict = self.formula.unit_propagate(self.decision_level, self.graph)
++                    self.is_sat, self.conflict = self.formula.unit_propagate(
++                        self.decision_level, self.graph
++                    )
+ 
+-                    if self.is_sat == 0: 
++                    if self.is_sat == 0:
+                         assert not self.is_all_assigned()
+ 
+                 ## If too much conflicts, RESTART IT NOW !
+@@ -147,25 +160,24 @@
+         assert self.is_sat != 0
+         assert self.is_sat == self.formula.get_value()
+         if self.is_all_assigned():
+-            print('All vars assigned !')
+-        else: 
+-            print('Early quit !')
+-            
++            print("All vars assigned !")
++        else:
++            print("Early quit !")
+ 
+-        print('Restart: ', self.restart_count)
+-        print('Learnt clauses: ', self.nb_learnt_clause)
+-        print('Decisions: ', self.nb_decisions)
+-        print('CPU time: {0:10.6f}s '.format(time.time()-initial_time))
+-        
+-        if stop: 
++        print("Restart: ", self.restart_count)
++        print("Learnt clauses: ", self.nb_learnt_clause)
++        print("Decisions: ", self.nb_decisions)
++        print("CPU time: {0:10.6f}s ".format(time.time() - initial_time))
++
++        if stop:
+             assert self.is_sat == -1
+-            print('UNSAT')
++            print("UNSAT")
+         elif not stop and self.is_sat == 1:
+-            print('SAT')
++            print("SAT")
+         elif not stop and self.is_sat == -1:
+-            print('UNSAT')
+-        else: #But practically, this should not happen !
+-            print('UNRESOLVED !')
++            print("UNSAT")
++        else:  # But practically, this should not happen !
++            print("UNRESOLVED !")
+ 
+         ## Check it
+         assigned_vars = self.graph.assigned_vars
+@@ -178,11 +190,6 @@
+         if self.is_sat == 1:
+             assert test_formula.get_value() == 1
+ 
+-        print('Verified by (re)propagating assignments on original clauses !')
+-            
+-        return self.formula.get_value    
+-        
+-    
++        print("Verified by (re)propagating assignments on original clauses !")
+ 
+-
+-
++        return self.formula.get_value
+diff -ru ./CDCL-based-SAT-Solver/clause.py /tmp/CDCL-based-SAT-Solver_formatted/clause.py
+--- ./CDCL-based-SAT-Solver/clause.py	2026-02-05 10:22:50
++++ /tmp/CDCL-based-SAT-Solver_formatted/clause.py	2026-03-02 19:17:24
+@@ -2,19 +2,20 @@
+ 
+     def __init__(self, clause):
+         self.clause = clause
+-        self.value = 0 # 0 = UNASSIGNED, 1 =  TRUE, -1 = FALSE
++        self.value = 0  # 0 = UNASSIGNED, 1 =  TRUE, -1 = FALSE
+         self.preprocess()
+         self.decision_level = [-1 for _ in self.clause]
+         self.size = len(self.clause)
+-    
+ 
+     def set_decision_levels(self, decision_level):
+         self.decision_level = decision_level
+-        self.clause = [x for _,x in sorted(zip(self.decision_level,self.clause), reverse=True)]
++        self.clause = [
++            x for _, x in sorted(zip(self.decision_level, self.clause), reverse=True)
++        ]
+         self.decision_level.sort(reverse=True)
+ 
+     def print_info(self):
+-        print('[C] Remaining clause: ', self.clause[:self.size])
++        print("[C] Remaining clause: ", self.clause[: self.size])
+         # print('[C] Clause size ', self.size)
+         # print('[C] Full clause: ', self.clause)
+         # print('[C] Truth value: ', self.value, ' (0=unassigned, -1=unsat, 1=sat)')
+@@ -47,19 +48,19 @@
+ 
+     def bcp(self, literal, decision_level, graph=None):
+         if self.size > 0 and literal in self.clause:
+-            for i in range(self.size): 
++            for i in range(self.size):
+                 self.decision_level[i] = decision_level
+-            self.size = 0 
+-            self.value = 1 #TRUE
++            self.size = 0
++            self.value = 1  # TRUE
+         elif self.size > 0 and -literal in self.clause:
+             index = self.clause.index(-literal)
+-            self.clause[index] = self.clause[self.size-1]
+-            self.clause[self.size-1] = -literal
+-            self.decision_level[self.size-1] = decision_level
++            self.clause[index] = self.clause[self.size - 1]
++            self.clause[self.size - 1] = -literal
++            self.decision_level[self.size - 1] = decision_level
+             self.size -= 1
+             if self.size == 0:
+-                self.value = -1 #FALSE
+-        if self.size == 0: 
++                self.value = -1  # FALSE
++        if self.size == 0:
+             assert self.value != 0
+         if self.size > 0:
+             assert self.value == 0
+@@ -71,13 +72,13 @@
+         # if contains two opposites literals => TRUE
+         for l in self.clause:
+             if -l in self.clause:
+-                self.value = 1 #TRUE
++                self.value = 1  # TRUE
+                 self.size = 0
+                 break
+ 
+     def restore(self, level):
+         offset = 0
+-        for lvl in self.decision_level[self.size:]:
++        for lvl in self.decision_level[self.size :]:
+             if lvl > level:
+                 offset += 1
+             else:
+@@ -85,15 +86,18 @@
+         self.size += offset
+         if offset > 0:
+             self.value = 0
+-            self.decision_level[:self.size] = [-1 for _ in range(self.size)]
++            self.decision_level[: self.size] = [-1 for _ in range(self.size)]
+ 
+     def resolution_operate(self, other, literal):
+         assert literal in self.clause
+         assert -literal in other.clause
+         index_literal = self.clause.index(literal)
+-        res = self.clause[:index_literal] + self.clause[index_literal+1:]
+-        dl = self.decision_level[:index_literal] + self.decision_level[index_literal+1:]
+-        for i,l in enumerate(other.clause):
++        res = self.clause[:index_literal] + self.clause[index_literal + 1 :]
++        dl = (
++            self.decision_level[:index_literal]
++            + self.decision_level[index_literal + 1 :]
++        )
++        for i, l in enumerate(other.clause):
+             if (abs(l) != abs(literal)) and (l not in res):
+                 res.append(l)
+                 dl.append(other.decision_level[i])
+diff -ru ./CDCL-based-SAT-Solver/cnf.py /tmp/CDCL-based-SAT-Solver_formatted/cnf.py
+--- ./CDCL-based-SAT-Solver/cnf.py	2026-02-27 17:47:32
++++ /tmp/CDCL-based-SAT-Solver_formatted/cnf.py	2026-03-02 19:17:24
+@@ -1,18 +1,19 @@
+ from lazy_clause import Lazy_Clause
+ 
++
+ class CNF_Formula:
+-    
++
+     def __init__(self, list_clause):
+         # self.formula = [Clause(c) for c in list_clause]
+         self.formula = [Lazy_Clause(c) for c in list_clause if len(c) > 0]
+         self.value = self.get_value()
+         self.nb_original_clauses = len(list_clause)
+-        self.MAX_NB_CLAUSE = 2*self.nb_original_clauses
++        self.MAX_NB_CLAUSE = 2 * self.nb_original_clauses
+ 
+     def print_info(self):
+         for c in self.formula:
+             c.print_info()
+-        print('[F] Truth value: ', self.value)
++        print("[F] Truth value: ", self.value)
+ 
+     def get_value(self):
+         list_values = [c.value for c in self.formula]
+@@ -21,8 +22,8 @@
+         else:
+             if 0 in list_values:
+                 return 0
+-            else: 
+-                return 1 
++            else:
++                return 1
+ 
+     def get_counter(self):
+         counter = {}
+@@ -32,7 +33,7 @@
+         #         if literal in counter:
+         #             counter[literal] += 1
+         #         else:
+-        #             counter[literal] = 1 
++        #             counter[literal] = 1
+ 
+         ## Lazy counter :  Count only the occurences of all unassigned references
+         unassigned_refs = []
+@@ -46,14 +47,19 @@
+             if literal in counter:
+                 counter[literal] += 1
+             else:
+-                counter[literal] = 1 
+-        counter = {k: freq for k, freq in sorted(counter.items(), key=lambda item: item[1], reverse= True)}
++                counter[literal] = 1
++        counter = {
++            k: freq
++            for k, freq in sorted(
++                counter.items(), key=lambda item: item[1], reverse=True
++            )
++        }
+         assert len(counter) > 0
+         return counter
+ 
+     def is_sat(self):
+         return self.value
+-    
++
+     def bcp(self, literal, decision_level, graph):
+         conflict_clause = None
+         for clause in self.formula:
+@@ -72,14 +78,14 @@
+                 continue
+         self.value = self.get_value()
+         return self.value, conflict_clause
+-            
++
+     def unit_propagate(self, decision_level, graph=None):
+         nb_clauses = len(self.formula)
+         i = 0
+         conflict_clause = None
+-        while i< nb_clauses and self.value == 0:
++        while i < nb_clauses and self.value == 0:
+             clause = self.formula[i]
+-            if clause.is_unit():  
++            if clause.is_unit():
+                 # unit_literal = clause.clause[0]
+                 unit_literal = clause.refA
+                 if graph is not None and (unit_literal not in graph.assigned_vars):
+@@ -88,9 +94,11 @@
+                 if is_sat == -1:
+                     self.value == -1
+                 else:
+-                    self.value, conflict_clause = self.unit_propagate(decision_level, graph) 
++                    self.value, conflict_clause = self.unit_propagate(
++                        decision_level, graph
++                    )
+                     break
+-            else: 
++            else:
+                 i += 1
+         return self.value, conflict_clause
+ 
+@@ -105,8 +113,7 @@
+         # TODO: Add strategy for adding/removing learnt clause HERE
+         # list_current_clauses = [c.clause for c in self.formula]
+         # if clause.clause not in list_current_clauses and len(clause.clause) <= 6:
+-        # if len(clause.clause) < 10: 
++        # if len(clause.clause) < 10:
+         if len(self.formula) > self.MAX_NB_CLAUSE:
+             self.formula.pop(self.nb_original_clauses)
+         self.formula += [clause]
+- 
+\ No newline at end of file
+diff -ru ./CDCL-based-SAT-Solver/cnf_data_structure.py /tmp/CDCL-based-SAT-Solver_formatted/cnf_data_structure.py
+--- ./CDCL-based-SAT-Solver/cnf_data_structure.py	2026-02-05 10:22:50
++++ /tmp/CDCL-based-SAT-Solver_formatted/cnf_data_structure.py	2026-03-02 19:17:24
+@@ -1,27 +1,29 @@
+-import numpy as np 
++import numpy as np
+ import random
+ 
++
+ class Clause:
+ 
+     def __init__(self, clause):
+         self.clause = clause
+-        self.value = 0 # 0 = UNASSIGNED, 1 =  TRUE, -1 = FALSE
++        self.value = 0  # 0 = UNASSIGNED, 1 =  TRUE, -1 = FALSE
+         self.preprocess()
+         self.decision_level = [-1 for _ in self.clause]
+         self.size = len(self.clause)
+-    
+ 
+     def set_decision_levels(self, decision_level):
+         self.decision_level = decision_level
+-        self.clause = [x for _,x in sorted(zip(self.decision_level,self.clause), reverse=True)]
++        self.clause = [
++            x for _, x in sorted(zip(self.decision_level, self.clause), reverse=True)
++        ]
+         self.decision_level.sort(reverse=True)
+ 
+     def print_info(self):
+-        print('[C] Remaining clause: ', self.clause[:self.size])
++        print("[C] Remaining clause: ", self.clause[: self.size])
+         # print('[C] Clause size ', self.size)
+-        print('[C] Full clause: ', self.clause)
+-        print('[C] Truth value: ', self.value, ' (0=unassigned, -1=unsat, 1=sat)')
+-        print('[C] Decision level details: ', self.decision_level)
++        print("[C] Full clause: ", self.clause)
++        print("[C] Truth value: ", self.value, " (0=unassigned, -1=unsat, 1=sat)")
++        print("[C] Decision level details: ", self.decision_level)
+         # print('[C] Backtrack level: ', self.get_backtrack_level())
+ 
+     def is_unit(self):
+@@ -39,7 +41,7 @@
+ 
+     def get_backtrack_level(self):
+         # if len(self.decision_level) == 1:
+-        #     return -1 
++        #     return -1
+         # else:
+         m1, m2 = -1, -1
+         for x in list(set(self.decision_level)):
+@@ -53,19 +55,19 @@
+ 
+     def bcp(self, literal, decision_level, graph=None):
+         if self.size > 0 and literal in self.clause:
+-            for i in range(self.size): 
++            for i in range(self.size):
+                 self.decision_level[i] = decision_level
+-            self.size = 0 
+-            self.value = 1 #TRUE
++            self.size = 0
++            self.value = 1  # TRUE
+         elif self.size > 0 and -literal in self.clause:
+             index = self.clause.index(-literal)
+-            self.clause[index] = self.clause[self.size-1]
+-            self.clause[self.size-1] = -literal
+-            self.decision_level[self.size-1] = decision_level
++            self.clause[index] = self.clause[self.size - 1]
++            self.clause[self.size - 1] = -literal
++            self.decision_level[self.size - 1] = decision_level
+             self.size -= 1
+             if self.size == 0:
+-                self.value = -1 #FALSE
+-        if self.size == 0: 
++                self.value = -1  # FALSE
++        if self.size == 0:
+             assert self.value != 0
+         if self.size > 0:
+             assert self.value == 0
+@@ -77,12 +79,12 @@
+         # if contains two opposites literals => TRUE
+         for l in self.clause:
+             if -l in self.clause:
+-                self.value = 1 #TRUE
++                self.value = 1  # TRUE
+                 break
+ 
+     def restore(self, level):
+         offset = 0
+-        for lvl in self.decision_level[self.size:]:
++        for lvl in self.decision_level[self.size :]:
+             if lvl > level:
+                 offset += 1
+             else:
+@@ -90,15 +92,18 @@
+         self.size += offset
+         if offset > 0:
+             self.value = 0
+-            self.decision_level[:self.size] = [-1 for _ in range(self.size)]
++            self.decision_level[: self.size] = [-1 for _ in range(self.size)]
+ 
+     def resolution_operate(self, other, literal):
+         assert literal in self.clause
+         assert -literal in other.clause
+         index_literal = self.clause.index(literal)
+-        res = self.clause[:index_literal] + self.clause[index_literal+1:]
+-        dl = self.decision_level[:index_literal] + self.decision_level[index_literal+1:]
+-        for i,l in enumerate(other.clause):
++        res = self.clause[:index_literal] + self.clause[index_literal + 1 :]
++        dl = (
++            self.decision_level[:index_literal]
++            + self.decision_level[index_literal + 1 :]
++        )
++        for i, l in enumerate(other.clause):
+             if (abs(l) != abs(literal)) and (l not in res):
+                 res.append(l)
+                 dl.append(other.decision_level[i])
+@@ -112,8 +117,9 @@
+         self.decision_level = [-1 for _ in self.clause]
+         self.size = len(self.clause)
+ 
++
+ class CNF_Formula:
+-    
++
+     def __init__(self, list_clause):
+         # self.formula = [Clause(c) for c in list_clause]
+         self.formula = [Lazy_Clause(c) for c in list_clause if len(c) > 0]
+@@ -128,7 +134,7 @@
+         for c in self.formula:
+             # print(c.clause)
+             c.print_info()
+-        print('[F] Truth value: ', self.value)
++        print("[F] Truth value: ", self.value)
+         # self.assignment.print_info()
+ 
+     def get_value(self):
+@@ -138,8 +144,8 @@
+         else:
+             if 0 in list_values:
+                 return 0
+-            else: 
+-                return 1 
++            else:
++                return 1
+ 
+     def get_counter(self):
+         counter = {}
+@@ -148,7 +154,7 @@
+         #         if literal in counter:
+         #             counter[literal] += 1
+         #         else:
+-        #             counter[literal] = 1 
++        #             counter[literal] = 1
+ 
+         ## Lazy counter
+         unassigned_refs = []
+@@ -162,14 +168,19 @@
+             if literal in counter:
+                 counter[literal] += 1
+             else:
+-                counter[literal] = 1 
+-        counter = {k: freq for k, freq in sorted(counter.items(), key=lambda item: item[1], reverse= True)}
++                counter[literal] = 1
++        counter = {
++            k: freq
++            for k, freq in sorted(
++                counter.items(), key=lambda item: item[1], reverse=True
++            )
++        }
+         assert len(counter) > 0
+         return counter
+ 
+     def is_sat(self):
+         return self.value
+-    
++
+     def bcp(self, literal, decision_level, graph):
+         conflict_clause = None
+         for clause in self.formula:
+@@ -195,14 +206,14 @@
+         # if self.value == 0:
+         #     print(len(graph.assigned_vars))
+         return self.value, conflict_clause
+-            
++
+     def unit_propagate(self, decision_level, graph=None):
+         nb_clauses = len(self.formula)
+         i = 0
+         conflict_clause = None
+-        while i< nb_clauses and self.value == 0:
++        while i < nb_clauses and self.value == 0:
+             clause = self.formula[i]
+-            if clause.is_unit():  
++            if clause.is_unit():
+                 # unit_literal = clause.clause[0]
+                 unit_literal = clause.refA
+                 # assert clause.decision_level[clause.indexA] == -1
+@@ -214,9 +225,11 @@
+                 if is_sat == -1:
+                     self.value == -1
+                 else:
+-                    self.value, conflict_clause = self.unit_propagate(decision_level, graph) 
++                    self.value, conflict_clause = self.unit_propagate(
++                        decision_level, graph
++                    )
+                     break
+-            else: 
++            else:
+                 i += 1
+         return self.value, conflict_clause
+ 
+@@ -236,7 +249,7 @@
+     #     if self.nb_propagate > self.max_UP:
+     #         print("Looping error")
+     #         return -1
+-    #     return None 
++    #     return None
+ 
+     def backtrack(self, backtrack_level, graph):
+         for clause in self.formula:
+@@ -250,13 +263,14 @@
+         # list_current_clauses = [c.clause for c in self.formula]
+         # if clause.clause not in list_current_clauses and len(clause.clause) <= 6:
+         self.formula += [clause]
+-        
++
++
+ class Implication_Graph:
+ 
+     def __init__(self):
+         self.graph = dict()
+         self.assigned_vars = []
+-        
++
+     def add_node(self, literal, antecedent, decision_level):
+         assert literal not in self.assigned_vars
+         assert -literal not in self.assigned_vars
+@@ -269,7 +283,9 @@
+         elif -literal in self.graph.keys():
+             self.graph.pop(-literal)
+         self.assigned_vars = list(self.graph.keys())
+-        assert (literal not in self.graph.keys()) and (-literal not in self.graph.keys())
++        assert (literal not in self.graph.keys()) and (
++            -literal not in self.graph.keys()
++        )
+ 
+     def backtrack(self, backtrack_level):
+         assigned_list = list(self.graph.keys())
+@@ -277,19 +293,20 @@
+             if self.graph[node][1] > backtrack_level:
+                 self.remove_node(node)
+             # else:
+-            #     break   
++            #     break
+         list_lvl = [self.graph[item][1] for item in self.graph.keys()]
+-        if len(list_lvl)>0:
++        if len(list_lvl) > 0:
+             assert max(list_lvl) <= backtrack_level
+ 
+     def get_antecedent(self, literal):
+-        if  literal in self.graph.keys():
++        if literal in self.graph.keys():
+             return self.graph[literal][0]
+         else:
+             return None
+ 
++
+ class Lazy_Clause:
+-    
++
+     def __init__(self, list_literal):
+         assert len(list_literal) > 0
+         #### DELETE THIS AFTER TEST
+@@ -297,25 +314,27 @@
+         ####
+         self.clause = list_literal
+         self.decision_level = [-1 for _ in self.clause]
+-        self.value = 0 # 0 = UNASSIGNED, 1 =  TRUE, -1 = FALSE
++        self.value = 0  # 0 = UNASSIGNED, 1 =  TRUE, -1 = FALSE
+         self.size = len(self.clause)
+         # Pick two references for a new clauses
+         # TODO WARNING: for learnt clauses, we need to update again the decision levels, size and pick new references
+         if len(self.clause) > 1:
+-            self.refA, self.refB = random.sample(self.clause,2)
+-            self.indexA, self.indexB = self.clause.index(self.refA), self.clause.index(self.refB)
++            self.refA, self.refB = random.sample(self.clause, 2)
++            self.indexA, self.indexB = self.clause.index(self.refA), self.clause.index(
++                self.refB
++            )
+         elif len(self.clause) == 1:
+             self.refA = self.clause[0]
+             self.refB = self.refA
+-            self.indexA, self.indexB = 0,0
++            self.indexA, self.indexB = 0, 0
+ 
+     def print_info(self):
+-        print('[C] Remaining clause: ', self.clause[:self.size])
+-        print('[C] Refs: ', self.refA, self.refB)
+-        print('[C] Index: ', self.indexA, self.indexB)
+-        print('[C] Truth value: ', self.value)
+-        print('[C] Full clause ', self.clause)
+-        print('[C] Details on decision_level: ', self.decision_level)
++        print("[C] Remaining clause: ", self.clause[: self.size])
++        print("[C] Refs: ", self.refA, self.refB)
++        print("[C] Index: ", self.indexA, self.indexB)
++        print("[C] Truth value: ", self.value)
++        print("[C] Full clause ", self.clause)
++        print("[C] Details on decision_level: ", self.decision_level)
+ 
+     def is_unit(self):
+         if self.size == 1:
+@@ -337,24 +356,29 @@
+             elif -self.clause[i] in assigned_vars and self.decision_level[i] == -1:
+                 self.decision_level[i] = graph.graph[-self.clause[i]][1]
+             # Else continue checking next literal
+-            else: continue 
+-        
+-        if len(sat_dl)>0:
++            else:
++                continue
++
++        if len(sat_dl) > 0:
+             self.value = 1
+             for i in range(len(self.decision_level)):
+                 if self.decision_level[i] == -1:
+-                    self.decision_level[i] = min(sat_dl) 
++                    self.decision_level[i] = min(sat_dl)
+                 elif self.decision_level[i] > min(sat_dl):
+                     self.decision_level[i] = min(sat_dl)
+ 
+         self.size = self.decision_level.count(-1)
+         if self.size == 0 and len(sat_dl) == 0:
+             self.value = -1
+-        
+-        self.clause = [x for _,x in sorted(zip(self.decision_level,self.clause), reverse=True)]
++
++        self.clause = [
++            x for _, x in sorted(zip(self.decision_level, self.clause), reverse=True)
++        ]
+         self.decision_level.sort(reverse=True)
+-        self.clause = self.clause[-self.size:] + self.clause[:-self.size]
+-        self.decision_level = self.decision_level[-self.size:] + self.decision_level[:-self.size]
++        self.clause = self.clause[-self.size :] + self.clause[: -self.size]
++        self.decision_level = (
++            self.decision_level[-self.size :] + self.decision_level[: -self.size]
++        )
+         # self.indexA = self.clause.index(self.refA)
+         # self.indexB = self.clause.index(self.refB)
+ 
+@@ -371,8 +395,8 @@
+                 sat_dl.append(graph.graph[self.clause[i]][1])
+                 # for i in range(self.size):
+                 #     # if self.decision_level[i] == -1:
+-                    #     self.decision_level[i] = previous_decision_level
+                 #     self.decision_level[i] = previous_decision_level
++                #     self.decision_level[i] = previous_decision_level
+                 # self.value = 1
+                 # self.size = 0
+                 # self.remove_refs()
+@@ -382,31 +406,36 @@
+                 self.decision_level[i] = graph.graph[-self.clause[i]][1]
+                 # self.size -= 1
+             # Else continue checking next literal
+-            else: continue 
+-        
+-        if len(sat_dl)>0:
++            else:
++                continue
++
++        if len(sat_dl) > 0:
+             for i in range(len(self.decision_level)):
+                 if self.decision_level[i] == -1:
+-                    self.decision_level[i] = min(sat_dl) 
++                    self.decision_level[i] = min(sat_dl)
+                 elif self.decision_level[i] > min(sat_dl):
+                     self.decision_level[i] = min(sat_dl)
+             self.value = 1
+-            self.size = 0 
++            self.size = 0
+             self.remove_refs()
+ 
+         self.size = self.decision_level.count(-1)
+         ## Arrange the decision level and according literals
+-        self.clause = [x for _,x in sorted(zip(self.decision_level,self.clause), reverse=True)]
++        self.clause = [
++            x for _, x in sorted(zip(self.decision_level, self.clause), reverse=True)
++        ]
+         self.decision_level.sort(reverse=True)
+         assert self.size >= 0
+ 
+         if self.size > 0:
+-            ## But unassigned literals now are at the end (decision_level = -1) 
++            ## But unassigned literals now are at the end (decision_level = -1)
+             ## So move them to the head
+             # print('After check 1')
+             # self.print_info()
+-            self.clause = self.clause[-self.size:] + self.clause[:-self.size]
+-            self.decision_level = self.decision_level[-self.size:] + self.decision_level[:-self.size]
++            self.clause = self.clause[-self.size :] + self.clause[: -self.size]
++            self.decision_level = (
++                self.decision_level[-self.size :] + self.decision_level[: -self.size]
++            )
+             # self.print_info()
+             ## After moving too many times, indexes and refs are also changes
+             ## Update them !
+@@ -417,10 +446,10 @@
+ 
+             assert self.value == 0
+             if self.size == 1:
+-            #     # self.print_info()
+-            #     # print(assigned_vars)
+-                for l in self.clause[self.size:]:
+-                    assert -l in assigned_vars 
++                #     # self.print_info()
++                #     # print(assigned_vars)
++                for l in self.clause[self.size :]:
++                    assert -l in assigned_vars
+         else:
+             if self.value != 1:
+                 self.value = -1
+@@ -431,48 +460,48 @@
+     def pick_new_ref(self):
+         assert self.size > 0
+         assert self.size == self.decision_level.count(-1)
+-        if self.size == 1: 
++        if self.size == 1:
+             assert self.decision_level[0] == -1
+             self.refA = self.clause[0]
+             self.refB = self.refA
+-        
+-        else: #self.size > 1
+-            if self.refA is None : 
+-                self.refA, self.refB = random.sample(self.clause[:self.size],2)
+-            else: 
++
++        else:  # self.size > 1
++            if self.refA is None:
++                self.refA, self.refB = random.sample(self.clause[: self.size], 2)
++            else:
+                 # self.print_info()
+-                pool_refs = self.clause[:self.size]
++                pool_refs = self.clause[: self.size]
+                 A_ok, B_ok = False, False
+-                if self.refA in pool_refs: # keep refA
++                if self.refA in pool_refs:  # keep refA
+                     pool_refs.remove(self.refA)
+                     A_ok = True
+-                if self.refB in pool_refs: # keep refB
++                if self.refB in pool_refs:  # keep refB
+                     pool_refs.remove(self.refB)
+                     B_ok = True
+                 # print(pool_refs, self.refA, self.refB)
+                 if not A_ok:
+-                    assert len(pool_refs) > 0 
++                    assert len(pool_refs) > 0
+                     self.refA = random.choice(pool_refs)
+                     pool_refs.remove(self.refA)
+                     A_ok = True
+                 if not B_ok:
+-                    assert len(pool_refs) > 0 
++                    assert len(pool_refs) > 0
+                     self.refB = random.choice(pool_refs)
+                     pool_refs.remove(self.refB)
+                     B_ok = True
+-                
++
+                 assert A_ok and B_ok
+-            
++
+         self.indexA = self.clause.index(self.refA)
+         self.indexB = self.clause.index(self.refB)
+-       
++
+         # # self.print_info()
+         # if refA : #pick new refA
+         #     # assert self.decision_level[self.indexA] != -1
+         #     if self.size == 1:
+         #         self.refA = self.clause[0]
+         #         self.indexA = 0
+-        #     else: 
++        #     else:
+         #         # print(self.indexA, self.refB)
+         #         if self.refA is None or self.decision_level[self.indexA] != -1:
+         #             for i in range(self.size):
+@@ -480,13 +509,13 @@
+         #                     assert self.decision_level[i] == -1
+         #                     self.refA  = self.clause[i]
+         #                     self.indexA = i
+-            
++
+         # if refB: #pick new refB
+         #     # assert self.decision_level[self.indexB] != -1
+         #     if self.size == 1:
+         #         self.refB = self.clause[0]
+         #         self.indexB = 0
+-        #     else: 
++        #     else:
+         #         # print(self.indexB)
+         #         if self.refB is None or self.decision_level[self.indexB] != -1:
+         #             for i in range(self.size):
+@@ -515,7 +544,7 @@
+         assert self.size == self.decision_level.count(-1)
+         # Lazy clause is visited only when Var(litteral) is Var(refA) or Var(refB)
+         # Case 1: size == 0, all literals are assigned ! check its value
+-        if self.size == 0: 
++        if self.size == 0:
+             assert self.value != 0
+             assert self.refA == None
+             assert self.refB == None
+@@ -524,24 +553,24 @@
+         elif self.size == 1:
+             assert self.refA != None
+             assert self.refA == self.refB
+-            assert self.indexA == self.indexB 
++            assert self.indexA == self.indexB
+             assert self.decision_level[self.indexA] == -1
+             assert self.value == 0
+             assert decision_level >= max(self.decision_level)
+-            for l in self.clause[self.size:]:
++            for l in self.clause[self.size :]:
+                 # if -l not in graph.assigned_vars:
+                 #     self.print_info()
+                 #     print("", l)
+-                assert -l in graph.assigned_vars 
++                assert -l in graph.assigned_vars
+ 
+-            if literal == self.refA: #SAT
++            if literal == self.refA:  # SAT
+                 self.decision_level[self.indexA] = decision_level
+                 self.size = 0
+                 self.value = 1
+                 self.remove_refs()
+-            elif -literal == self.refA: #UNSAT
++            elif -literal == self.refA:  # UNSAT
+                 self.decision_level[self.indexA] = decision_level
+-                self.size = 0 
++                self.size = 0
+                 self.value = -1
+                 self.remove_refs()
+             else:
+@@ -560,16 +589,16 @@
+             #     print(decision_level, max(self.decision_level))
+             #     self.print_info()
+             assert decision_level >= max(self.decision_level)
+-            if literal == self.refA or literal == self.refB: #SAT
++            if literal == self.refA or literal == self.refB:  # SAT
+                 # Assume that every unassigned literal is assigned at this level
+                 # thanks to the BCP of litteral at this level
+                 # self.decision_level[:self.size] = [decision_level for _ in range(self.size)]
+-                # self.value = 1 
++                # self.value = 1
+                 # self.size = 0
+                 # self.remove_refs()
+                 self.check_n_update(graph)
+-            elif -literal == self.refA or -literal == self.refB: #CHECK CLAUSE
+-                # check and update other literals 
++            elif -literal == self.refA or -literal == self.refB:  # CHECK CLAUSE
++                # check and update other literals
+                 # if there is one true -> SAT
+                 # print('Check at lvl ', decision_level)
+                 self.check_n_update(graph)
+@@ -579,50 +608,50 @@
+                 # if self.value == 0:
+                 #     self.print_info()
+                 #     assert self.size > 1
+-                    # Case 3.1: refA is False, replace refA
+-                    # if -literal == self.refA:
+-                    #     self.clause[self.indexA] = self.clause[self.size-1]
+-                    #     self.clause[self.size-1] = self.refA
+-                    #     self.indexA = self.size-1
+-                    #     self.decision_level[self.indexA] = decision_level
+-                    #     self.size -= 1
+-                    #     assert self.size > 0
+-                    #     self.pick_new_ref(refA=True, refB=False)
+-                    #     self.indexB = self.clause.index(self.refB)
+-                        # if self.size == 1:
+-                        #     self.refA = self.clause[0]
+-                        #     self.indexA = 0
+-                        #     self.refB = self.refA
+-                        #     self.indexB = self.indexA
+-                        # elif self.size > 1:
+-                        #     self.pick_new_ref(refA=True)
+-                        #     return 0
+-                        # else:
+-                        #     self.value = -1
+-                        #     return -1
+-                    # Case 3.2: refB is False, replace refB
+-                    # elif -literal == self.refB:
+-                    #     self.clause[self.indexB] = self.clause[self.size-1]
+-                    #     self.clause[self.size-1] = self.refB
+-                    #     self.indexB = self.size -1 
+-                    #     self.decision_level[self.indexB] = decision_level
+-                    #     self.size -= 1
+-                    #     assert self.size > 0
+-                    #     self.pick_new_ref(refA=False, refB=True)
+-                    #     self.indexA = self.clause.index(self.refA)
+-                        # if self.size == 1:
+-                        #     self.refB = self.clause[0]
+-                        #     self.indexB = 0
+-                        #     self.refA = self.refB
+-                        #     self.indexA = self.indexB
+-                        # elif self.size > 1:
+-                        #     self.pick_new_ref(refB=True)
+-                        #     return 0
+-                        # else: 
+-                        #     self.value = -1
+-                        #     return -1 
+-                    # assert self.value == 0
+-            else:  
++                # Case 3.1: refA is False, replace refA
++                # if -literal == self.refA:
++                #     self.clause[self.indexA] = self.clause[self.size-1]
++                #     self.clause[self.size-1] = self.refA
++                #     self.indexA = self.size-1
++                #     self.decision_level[self.indexA] = decision_level
++                #     self.size -= 1
++                #     assert self.size > 0
++                #     self.pick_new_ref(refA=True, refB=False)
++                #     self.indexB = self.clause.index(self.refB)
++                # if self.size == 1:
++                #     self.refA = self.clause[0]
++                #     self.indexA = 0
++                #     self.refB = self.refA
++                #     self.indexB = self.indexA
++                # elif self.size > 1:
++                #     self.pick_new_ref(refA=True)
++                #     return 0
++                # else:
++                #     self.value = -1
++                #     return -1
++                # Case 3.2: refB is False, replace refB
++                # elif -literal == self.refB:
++                #     self.clause[self.indexB] = self.clause[self.size-1]
++                #     self.clause[self.size-1] = self.refB
++                #     self.indexB = self.size -1
++                #     self.decision_level[self.indexB] = decision_level
++                #     self.size -= 1
++                #     assert self.size > 0
++                #     self.pick_new_ref(refA=False, refB=True)
++                #     self.indexA = self.clause.index(self.refA)
++                # if self.size == 1:
++                #     self.refB = self.clause[0]
++                #     self.indexB = 0
++                #     self.refA = self.refB
++                #     self.indexA = self.indexB
++                # elif self.size > 1:
++                #     self.pick_new_ref(refB=True)
++                #     return 0
++                # else:
++                #     self.value = -1
++                #     return -1
++                # assert self.value == 0
++            else:
+                 pass
+         assert self.size == self.decision_level.count(-1)
+         # full_clause = Clause(self.clause)
+@@ -632,7 +661,6 @@
+         #     print(self.clause, full_clause.value)
+         #     print(graph.assigned_vars)
+         return self.value
+-            
+ 
+     def restore(self, level, graph):
+         # print('Assignment: ', graph.graph)
+@@ -645,20 +673,20 @@
+         for lvl in self.decision_level:
+             if lvl == -1 or lvl > level:
+                 offset += 1
+-            
++
+         self.size = offset
+         if self.size > 0:
+             self.value = 0
+-            self.decision_level[:self.size] = [-1 for _ in range(self.size)]
++            self.decision_level[: self.size] = [-1 for _ in range(self.size)]
+             # if self.decision_level[self.indexA] >= 0:
+             #     self.pick_new_ref(refA=True)
+             # if self.decision_level[self.indexB] >= 0:
+             #     self.pick_new_ref(refB=True)
+             self.pick_new_ref()
+         else:
+-            
++
+             self.remove_refs()
+-            
++
+         # print("After restore at lvl ", level)
+         # self.print_info()
+         assert self.size == self.decision_level.count(-1)
+@@ -669,9 +697,9 @@
+         #     # for item in graph.graph.keys():
+         #     #     print(item, graph.graph[item][1])
+         #     for l in self.clause[self.size:]:
+-        #         assert -l in graph.assigned_vars 
++        #         assert -l in graph.assigned_vars
+         if self.size >= 1:
+-            for i,l in enumerate(self.clause):
++            for i, l in enumerate(self.clause):
+                 if i < self.size:
+                     assert l not in graph.assigned_vars
+                     assert -l not in graph.assigned_vars
+@@ -688,7 +716,7 @@
+ 
+     def get_backtrack_level(self):
+         # if len(self.decision_level) == 1:
+-        #     return -1 
++        #     return -1
+         # else:
+         m1, m2 = -1, -1
+         for x in list(set(self.decision_level)):
+@@ -701,12 +729,17 @@
+         return m2
+ 
+     def resolution_operate(self, other, literal):
+-        assert (literal in self.clause and -literal in other.clause) # or  (-literal in self.clause and literal in other.clause)
++        assert (
++            literal in self.clause and -literal in other.clause
++        )  # or  (-literal in self.clause and literal in other.clause)
+         index_literal = self.clause.index(literal)
+-        res = self.clause[:index_literal] + self.clause[index_literal+1:]
+-        dl = self.decision_level[:index_literal] + self.decision_level[index_literal+1:]
+-        for i,l in enumerate(other.clause):
+-            if (abs(l) != abs(literal)):
++        res = self.clause[:index_literal] + self.clause[index_literal + 1 :]
++        dl = (
++            self.decision_level[:index_literal]
++            + self.decision_level[index_literal + 1 :]
++        )
++        for i, l in enumerate(other.clause):
++            if abs(l) != abs(literal):
+                 if l not in res and -l not in res:
+                     res.append(l)
+                     dl.append(other.decision_level[i])
+@@ -729,8 +762,7 @@
+ 
+     def set_decision_levels(self, decision_level):
+         self.decision_level = decision_level
+-        self.clause = [x for _,x in sorted(zip(self.decision_level,self.clause), reverse=True)]
++        self.clause = [
++            x for _, x in sorted(zip(self.decision_level, self.clause), reverse=True)
++        ]
+         self.decision_level.sort(reverse=True)
+-        
+-
+-        
+\ No newline at end of file
+diff -ru ./CDCL-based-SAT-Solver/dimacs_parser.py /tmp/CDCL-based-SAT-Solver_formatted/dimacs_parser.py
+--- ./CDCL-based-SAT-Solver/dimacs_parser.py	2026-02-05 10:22:50
++++ /tmp/CDCL-based-SAT-Solver_formatted/dimacs_parser.py	2026-03-02 19:17:24
+@@ -1,34 +1,49 @@
++"""
++    DIMAC parser:  read CNF file and save in a list
++Reference: https://github.com/marcmelis/dpll-sat/blob/master/solvers/original_dpll.py
++"""
+ 
+-'''
+-	DIMAC parser:  read CNF file and save in a list 
+-    Reference: https://github.com/marcmelis/dpll-sat/blob/master/solvers/original_dpll.py 
+-'''
+ import time
+ 
++
+ def parse(filename, verbose):
+     initial_time = time.time()
+     clauses = []
+-    if verbose: 
+-        print('=====================[ Problem Statistics ]=====================')
+-        print('|                                                              |')
++    if verbose:
++        print("=====================[ Problem Statistics ]=====================")
++        print("|                                                              |")
+     for line in open(filename):
+-        if line.startswith('c'): continue
+-        if line.startswith('p'):
++        if line.startswith("c"):
++            continue
++        if line.startswith("p"):
+             nvars, nclauses = line.split()[2:4]
+             if verbose:
+-                print('|   Nb of variables:      {0:10s}                           |'.format(nvars))
+-                print('|   Nb of clauses:        {0:10s}                           |'.format(nclauses))
++                print(
++                    "|   Nb of variables:      {0:10s}                           |".format(
++                        nvars
++                    )
++                )
++                print(
++                    "|   Nb of clauses:        {0:10s}                           |".format(
++                        nclauses
++                    )
++                )
+             continue
+         clause = [int(x) for x in line[:-2].split()]
+         clauses.append(clause)
+-    
++
+     end_time = time.time()
+     if verbose:
+-        print('|   Parse time:      {0:10.4f}s                               |'.format(end_time - initial_time))
+-        print('|                                                              |')
++        print(
++            "|   Parse time:      {0:10.4f}s                               |".format(
++                end_time - initial_time
++            )
++        )
++        print("|                                                              |")
+ 
+     return clauses, int(nvars)
+ 
+-# # Unit test 
++
++# # Unit test
+ # cnf, maxvar = parse("cnf_instances/test.cnf")
+ # print(cnf, maxvar)
+diff -ru ./CDCL-based-SAT-Solver/dpll_solver.py /tmp/CDCL-based-SAT-Solver_formatted/dpll_solver.py
+--- ./CDCL-based-SAT-Solver/dpll_solver.py	2026-02-05 10:22:50
++++ /tmp/CDCL-based-SAT-Solver_formatted/dpll_solver.py	2026-03-02 19:17:24
+@@ -1,7 +1,7 @@
+-'''
+-	SAT solver based on DPLL
+-    Reference: https://github.com/marcmelis/dpll-sat/blob/master/solvers/original_dpll.py 
+-'''
++"""
++    SAT solver based on DPLL
++Reference: https://github.com/marcmelis/dpll-sat/blob/master/solvers/original_dpll.py
++"""
+ 
+ from dimacs_parser import parse
+ import random
+@@ -11,17 +11,19 @@
+ # Boolean Constraint Propagation (BCP)
+ # Input : an input formula F, a litteral L
+ # Output :  a modified formula F'
+-# Core idea: 
+-#           if L in C  => remove C 
++# Core idea:
++#           if L in C  => remove C
+ #           if -L in C => remove -L from C
+ #           else       => keep C
+ def bcp(formula, unit):
+     modified = []
+     for clause in formula:
+-        if unit in clause: continue
++        if unit in clause:
++            continue
+         if -unit in clause:
+             c = [x for x in clause if x != -unit]
+-            if len(c) == 0: return -1
++            if len(c) == 0:
++                return -1
+             modified.append(c)
+         else:
+             modified.append(clause)
+@@ -39,6 +41,7 @@
+                 counter[literal] = 1
+     return counter
+ 
++
+ # Find pure litterals then BCP w.r.t. these pure litterals
+ # Return a reduced formula after BCP & an assignement for these pure litterals
+ def pure_literal(formula):
+@@ -46,13 +49,14 @@
+     assignment = []
+     pures = []  # [ x for x,y in counter.items() if -x not in counter ]
+     for literal, _ in counter.items():
+-        if -literal not in counter: 
++        if -literal not in counter:
+             pures.append(literal)
+     for pure in pures:
+         formula = bcp(formula, pure)
+     assignment += pures
+     return formula, assignment
+ 
++
+ # Unit Propagation (UP)
+ # Input : a formula F
+ # Ouput : a modified formula
+@@ -66,11 +70,12 @@
+         assignment += [unit[0]]
+         if formula == -1:
+             return -1, []
+-        if not formula: 
++        if not formula:
+             return formula, assignment
+         unit_clauses = [c for c in formula if len(c) == 1]
+     return formula, assignment
+ 
++
+ # Variable selection heuristics: Choosing randomly !!!
+ def variable_selection(formula):
+     counter = get_counter(formula)
+@@ -83,37 +88,41 @@
+     formula, pure_assignment = pure_literal(formula)
+     formula, unit_assignment = unit_propagation(formula)
+     assignment = assignment + pure_assignment + unit_assignment
+-    if formula == - 1:
++    if formula == -1:
+         return []
+     if not formula:
+         return assignment
+-    
++
+     if len(get_counter(formula)) > 0:
+         variable = variable_selection(formula)
+         solution = backtracking(bcp(formula, variable), assignment + [variable])
+         if not solution:
+             solution = backtracking(bcp(formula, -variable), assignment + [-variable])
+         return solution
+-    else: 
++    else:
+         return assignment
++
++
+ # Main function : solve
+ # Pseudo-code:
+ #       - Read CNF
+-#       - Backtrack recursively : Unit, pure, variable selection -> BCP 
++#       - Backtrack recursively : Unit, pure, variable selection -> BCP
+ def solve(input_cnf_file, verbose):
+     clauses, nvars = parse(input_cnf_file, verbose)
+     solution = backtracking(clauses, [])
+     if verbose:
+-        print('=====================[ Search Statistics  ]=====================')
+-        print('|                                                              |')
++        print("=====================[ Search Statistics  ]=====================")
++        print("|                                                              |")
+     if solution:
+-        solution += [x for x in range(1, nvars + 1) if x not in solution and -x not in solution]
++        solution += [
++            x for x in range(1, nvars + 1) if x not in solution and -x not in solution
++        ]
+         solution.sort(key=lambda x: abs(x))
+         if verbose:
+-            print('=====================[       Result       ]=====================')
+-            print('s SATISFIABLE')
+-            print('v ' + ' '.join([str(x) for x in solution]) + ' 0')
++            print("=====================[       Result       ]=====================")
++            print("s SATISFIABLE")
++            print("v " + " ".join([str(x) for x in solution]) + " 0")
+     else:
+         if verbose:
+-            print('=====================[       Result       ]=====================')
+-            print('s UNSATISFIABLE')
+\ No newline at end of file
++            print("=====================[       Result       ]=====================")
++            print("s UNSATISFIABLE")
+diff -ru ./CDCL-based-SAT-Solver/implication_graph.py /tmp/CDCL-based-SAT-Solver_formatted/implication_graph.py
+--- ./CDCL-based-SAT-Solver/implication_graph.py	2026-02-05 10:22:50
++++ /tmp/CDCL-based-SAT-Solver_formatted/implication_graph.py	2026-03-02 19:17:24
+@@ -3,7 +3,7 @@
+     def __init__(self):
+         self.graph = dict()
+         self.assigned_vars = []
+-        
++
+     def add_node(self, literal, antecedent, decision_level):
+         assert literal not in self.assigned_vars
+         assert -literal not in self.assigned_vars
+@@ -16,7 +16,9 @@
+         elif -literal in self.graph.keys():
+             self.graph.pop(-literal)
+         self.assigned_vars = list(self.graph.keys())
+-        assert (literal not in self.graph.keys()) and (-literal not in self.graph.keys())
++        assert (literal not in self.graph.keys()) and (
++            -literal not in self.graph.keys()
++        )
+ 
+     def backtrack(self, backtrack_level):
+         assigned_list = list(self.graph.keys())
+@@ -24,11 +26,11 @@
+             if self.graph[node][1] > backtrack_level:
+                 self.remove_node(node)
+         list_lvl = [self.graph[item][1] for item in self.graph.keys()]
+-        if len(list_lvl)>0:
++        if len(list_lvl) > 0:
+             assert max(list_lvl) <= backtrack_level
+ 
+     def get_antecedent(self, literal):
+-        if  literal in self.graph.keys():
++        if literal in self.graph.keys():
+             return self.graph[literal][0]
+         else:
+-            return None
+\ No newline at end of file
++            return None
+diff -ru ./CDCL-based-SAT-Solver/lazy_clause.py /tmp/CDCL-based-SAT-Solver_formatted/lazy_clause.py
+--- ./CDCL-based-SAT-Solver/lazy_clause.py	2026-02-05 10:22:50
++++ /tmp/CDCL-based-SAT-Solver_formatted/lazy_clause.py	2026-03-02 19:17:24
+@@ -1,25 +1,28 @@
+-import random 
++import random
+ 
++
+ class Lazy_Clause:
+-    
++
+     def __init__(self, list_literal):
+         assert len(list_literal) > 0
+         self.clause = list_literal
+         self.decision_level = [-1 for _ in self.clause]
+-        self.value = 0 # 0 = UNASSIGNED, 1 =  TRUE, -1 = FALSE
++        self.value = 0  # 0 = UNASSIGNED, 1 =  TRUE, -1 = FALSE
+         self.size = len(self.clause)
+         # Pick two references for a new clauses
+         # TODO WARNING: for learnt clauses, we need to update again the decision levels, size and pick new references
+         if len(self.clause) > 1:
+-            self.refA, self.refB = random.sample(self.clause,2)
+-            self.indexA, self.indexB = self.clause.index(self.refA), self.clause.index(self.refB)
++            self.refA, self.refB = random.sample(self.clause, 2)
++            self.indexA, self.indexB = self.clause.index(self.refA), self.clause.index(
++                self.refB
++            )
+         elif len(self.clause) == 1:
+             self.refA = self.clause[0]
+             self.refB = self.refA
+-            self.indexA, self.indexB = 0,0
++            self.indexA, self.indexB = 0, 0
+ 
+     def print_info(self):
+-        print('[C] Remaining clause: ', self.clause[:self.size])
++        print("[C] Remaining clause: ", self.clause[: self.size])
+         # print('[C] Refs: ', self.refA, self.refB)
+         # print('[C] Index: ', self.indexA, self.indexB)
+         # print('[C] Truth value: ', self.value)
+@@ -46,24 +49,29 @@
+             elif -self.clause[i] in assigned_vars and self.decision_level[i] == -1:
+                 self.decision_level[i] = graph.graph[-self.clause[i]][1]
+             # Else continue checking next literal
+-            else: continue 
+-        
+-        if len(sat_dl)>0:
++            else:
++                continue
++
++        if len(sat_dl) > 0:
+             self.value = 1
+             for i in range(len(self.decision_level)):
+                 if self.decision_level[i] == -1:
+-                    self.decision_level[i] = min(sat_dl) 
++                    self.decision_level[i] = min(sat_dl)
+                 elif self.decision_level[i] > min(sat_dl):
+                     self.decision_level[i] = min(sat_dl)
+ 
+         self.size = self.decision_level.count(-1)
+         if self.size == 0 and len(sat_dl) == 0:
+             self.value = -1
+-        
+-        self.clause = [x for _,x in sorted(zip(self.decision_level,self.clause), reverse=True)]
++
++        self.clause = [
++            x for _, x in sorted(zip(self.decision_level, self.clause), reverse=True)
++        ]
+         self.decision_level.sort(reverse=True)
+-        self.clause = self.clause[-self.size:] + self.clause[:-self.size]
+-        self.decision_level = self.decision_level[-self.size:] + self.decision_level[:-self.size]
++        self.clause = self.clause[-self.size :] + self.clause[: -self.size]
++        self.decision_level = (
++            self.decision_level[-self.size :] + self.decision_level[: -self.size]
++        )
+         # self.indexA = self.clause.index(self.refA)
+         # self.indexB = self.clause.index(self.refB)
+ 
+@@ -71,7 +79,7 @@
+         assigned_vars = graph.assigned_vars
+         sat_dl = []
+         for i in range(len(self.clause)):
+-            # If there is one true literal in list of assigned variables => SAT 
++            # If there is one true literal in list of assigned variables => SAT
+             if self.clause[i] in assigned_vars:
+                 self.decision_level[i] = graph.graph[self.clause[i]][1]
+                 sat_dl.append(graph.graph[self.clause[i]][1])
+@@ -79,29 +87,34 @@
+             elif -self.clause[i] in assigned_vars and self.decision_level[i] == -1:
+                 self.decision_level[i] = graph.graph[-self.clause[i]][1]
+             # Else continue checking next literal
+-            else: continue 
+-        
+-        if len(sat_dl)>0:
++            else:
++                continue
++
++        if len(sat_dl) > 0:
+             for i in range(len(self.decision_level)):
+                 if self.decision_level[i] == -1:
+-                    self.decision_level[i] = min(sat_dl) 
++                    self.decision_level[i] = min(sat_dl)
+                 elif self.decision_level[i] > min(sat_dl):
+                     self.decision_level[i] = min(sat_dl)
+             self.value = 1
+-            self.size = 0 
++            self.size = 0
+             self.remove_refs()
+ 
+         self.size = self.decision_level.count(-1)
+         ## Arrange the decision level and according literals
+-        self.clause = [x for _,x in sorted(zip(self.decision_level,self.clause), reverse=True)]
++        self.clause = [
++            x for _, x in sorted(zip(self.decision_level, self.clause), reverse=True)
++        ]
+         self.decision_level.sort(reverse=True)
+         assert self.size >= 0
+ 
+         if self.size > 0:
+-            ## But unassigned literals now are at the end (decision_level = -1) 
++            ## But unassigned literals now are at the end (decision_level = -1)
+             ## So move them to the head
+-            self.clause = self.clause[-self.size:] + self.clause[:-self.size]
+-            self.decision_level = self.decision_level[-self.size:] + self.decision_level[:-self.size]
++            self.clause = self.clause[-self.size :] + self.clause[: -self.size]
++            self.decision_level = (
++                self.decision_level[-self.size :] + self.decision_level[: -self.size]
++            )
+             ## After moving too many times, indexes and refs are also changes
+             ## Update them !
+             self.indexA = self.clause.index(self.refA)
+@@ -110,7 +123,7 @@
+             assert self.value == 0
+             # if self.size == 1:
+             #     for l in self.clause[self.size:]:
+-            #         assert -l in assigned_vars 
++            #         assert -l in assigned_vars
+         else:
+             if self.value != 1:
+                 self.value = -1
+@@ -120,37 +133,37 @@
+     def pick_new_ref(self):
+         assert self.size > 0
+         assert self.size == self.decision_level.count(-1)
+-        if self.size == 1: 
++        if self.size == 1:
+             assert self.decision_level[0] == -1
+             self.refA = self.clause[0]
+             self.refB = self.refA
+-        
+-        else: #self.size > 1
+-            if self.refA is None : 
+-                self.refA, self.refB = random.sample(self.clause[:self.size],2)
+-            else: 
++
++        else:  # self.size > 1
++            if self.refA is None:
++                self.refA, self.refB = random.sample(self.clause[: self.size], 2)
++            else:
+                 # self.print_info()
+-                pool_refs = self.clause[:self.size]
++                pool_refs = self.clause[: self.size]
+                 A_ok, B_ok = False, False
+-                if self.refA in pool_refs: # keep refA
++                if self.refA in pool_refs:  # keep refA
+                     pool_refs.remove(self.refA)
+                     A_ok = True
+-                if self.refB in pool_refs: # keep refB
++                if self.refB in pool_refs:  # keep refB
+                     pool_refs.remove(self.refB)
+                     B_ok = True
+                 if not A_ok:
+-                    assert len(pool_refs) > 0 
++                    assert len(pool_refs) > 0
+                     self.refA = random.choice(pool_refs)
+                     pool_refs.remove(self.refA)
+                     A_ok = True
+                 if not B_ok:
+-                    assert len(pool_refs) > 0 
++                    assert len(pool_refs) > 0
+                     self.refB = random.choice(pool_refs)
+                     pool_refs.remove(self.refB)
+                     B_ok = True
+-                
++
+                 assert A_ok and B_ok
+-            
++
+         self.indexA = self.clause.index(self.refA)
+         self.indexB = self.clause.index(self.refB)
+ 
+@@ -168,7 +181,7 @@
+         assert self.size == self.decision_level.count(-1)
+         # Lazy clause is visited only when Var(litteral) is Var(refA) or Var(refB)
+         # Case 1: size == 0, all literals are assigned ! check its value
+-        if self.size == 0: 
++        if self.size == 0:
+             assert self.value != 0
+             assert self.refA == None
+             assert self.refB == None
+@@ -177,21 +190,21 @@
+         elif self.size == 1:
+             assert self.refA != None
+             assert self.refA == self.refB
+-            assert self.indexA == self.indexB 
++            assert self.indexA == self.indexB
+             assert self.decision_level[self.indexA] == -1
+             assert self.value == 0
+             assert decision_level >= max(self.decision_level)
+             # for l in self.clause[self.size:]:
+-            #     assert -l in graph.assigned_vars 
++            #     assert -l in graph.assigned_vars
+ 
+-            if literal == self.refA: #SAT
++            if literal == self.refA:  # SAT
+                 self.decision_level[self.indexA] = decision_level
+                 self.size = 0
+                 self.value = 1
+                 self.remove_refs()
+-            elif -literal == self.refA: #UNSAT
++            elif -literal == self.refA:  # UNSAT
+                 self.decision_level[self.indexA] = decision_level
+-                self.size = 0 
++                self.size = 0
+                 self.value = -1
+                 self.remove_refs()
+             else:
+@@ -208,16 +221,15 @@
+             assert self.decision_level[self.indexB] == -1
+ 
+             assert decision_level >= max(self.decision_level)
+-            if literal == self.refA or literal == self.refB: #SAT => Check
++            if literal == self.refA or literal == self.refB:  # SAT => Check
+                 self.check_n_update(graph)
+-            elif -literal == self.refA or -literal == self.refB: #Check 
+-                self.check_n_update(graph) 
+-            else:  
++            elif -literal == self.refA or -literal == self.refB:  # Check
++                self.check_n_update(graph)
++            else:
+                 pass
+         assert self.size == self.decision_level.count(-1)
+ 
+         return self.value
+-            
+ 
+     def restore(self, level, graph):
+         self.update(graph)
+@@ -225,14 +237,14 @@
+         for lvl in self.decision_level:
+             if lvl == -1 or lvl > level:
+                 offset += 1
+-            
++
+         self.size = offset
+         if self.size > 0:
+             self.value = 0
+-            self.decision_level[:self.size] = [-1 for _ in range(self.size)]
++            self.decision_level[: self.size] = [-1 for _ in range(self.size)]
+             self.pick_new_ref()
+         else:
+-            
++
+             self.remove_refs()
+ 
+         assert self.size == self.decision_level.count(-1)
+@@ -265,12 +277,17 @@
+         return m2
+ 
+     def resolution_operate(self, other, literal):
+-        assert (literal in self.clause and -literal in other.clause) # or  (-literal in self.clause and literal in other.clause)
++        assert (
++            literal in self.clause and -literal in other.clause
++        )  # or  (-literal in self.clause and literal in other.clause)
+         index_literal = self.clause.index(literal)
+-        res = self.clause[:index_literal] + self.clause[index_literal+1:]
+-        dl = self.decision_level[:index_literal] + self.decision_level[index_literal+1:]
+-        for i,l in enumerate(other.clause):
+-            if (abs(l) != abs(literal)):
++        res = self.clause[:index_literal] + self.clause[index_literal + 1 :]
++        dl = (
++            self.decision_level[:index_literal]
++            + self.decision_level[index_literal + 1 :]
++        )
++        for i, l in enumerate(other.clause):
++            if abs(l) != abs(literal):
+                 if l not in res and -l not in res:
+                     res.append(l)
+                     dl.append(other.decision_level[i])
+@@ -289,5 +306,7 @@
+ 
+     def set_decision_levels(self, decision_level):
+         self.decision_level = decision_level
+-        self.clause = [x for _,x in sorted(zip(self.decision_level,self.clause), reverse=True)]
+-        self.decision_level.sort(reverse=True)
+\ No newline at end of file
++        self.clause = [
++            x for _, x in sorted(zip(self.decision_level, self.clause), reverse=True)
++        ]
++        self.decision_level.sort(reverse=True)
+diff -ru ./CDCL-based-SAT-Solver/main.py /tmp/CDCL-based-SAT-Solver_formatted/main.py
+--- ./CDCL-based-SAT-Solver/main.py	2026-02-28 00:02:42
++++ /tmp/CDCL-based-SAT-Solver_formatted/main.py	2026-03-02 19:17:24
+@@ -2,6 +2,7 @@
+ 
+ import numpy as np
+ from utils import get_args
++
+ # import dpll_solver
+ from cdcl_solver import CDCL_Solver
+ 
+@@ -19,5 +20,6 @@
+     solver = CDCL_Solver(input_cnf_file, verbose)
+     solver.solve()
+ 
+-if __name__ == '__main__':
+-    main()
+\ No newline at end of file
++
++if __name__ == "__main__":
++    main()
+diff -ru ./CDCL-based-SAT-Solver/utils.py /tmp/CDCL-based-SAT-Solver_formatted/utils.py
+--- ./CDCL-based-SAT-Solver/utils.py	2026-02-05 10:22:50
++++ /tmp/CDCL-based-SAT-Solver_formatted/utils.py	2026-03-02 19:17:24
+@@ -1,10 +1,12 @@
+ import argparse
+ 
++
+ def get_args():
+     argparser = argparse.ArgumentParser(description=__doc__)
+     argparser.add_argument(
+-        '-i', '--input',
+-        metavar='I',
++        "-i",
++        "--input",
++        metavar="I",
+         # default='cnf_instances/Steiner-9-5-bce.cnf',
+         # default='cnf_instances/Steiner-15-7-bce.cnf',
+         # default='cnf_instances/Steiner-27-10-bce.cnf',
+@@ -12,12 +14,10 @@
+         # default='cnf_instances/uf20-01.cnf',
+         # default='cnf_instances/uf50-01.cnf',
+         # default='cnf_instances/uf50-01.cnf',
+-        default='cnf_instances/uuf50-01.cnf',
++        default="cnf_instances/uuf50-01.cnf",
+         # default='cnf_instances/uuf100-UNSAT.cnf',
+-        help='The DIMACS file')
+-    argparser.add_argument(
+-        '-v', '--verbose',
+-        default=1,    
+-        help='Verbose option')
++        help="The DIMACS file",
++    )
++    argparser.add_argument("-v", "--verbose", default=1, help="Verbose option")
+     args = argparser.parse_args()
+-    return args
+\ No newline at end of file
++    return args

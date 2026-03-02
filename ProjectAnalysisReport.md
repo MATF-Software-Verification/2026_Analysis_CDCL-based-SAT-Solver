@@ -12,11 +12,11 @@ Primenjeni su sledeći alati za analizu projekta:
 5. Analiza složenosti - Radon
 6. Profajliranje - cProfile i pyprof2calltree
 7. Merenje performansi - pytest-benchmark
-8. todo
+8. Formatiranje koda - black
 
 ## Integraciono testiranje - pytest
 
-Za proveru ispravnosti solver-a sprovedeno je integraciono testiranje.  
+Za proveru ispravnosti rešavača sprovedeno je integraciono testiranje.  
 Testovi su smešteni u folderu `tests/integration` i sadrže formule u DIMACS CNF formatu.  
 Svaki test proverava da li je data formula zadovoljiva (SAT) ili nezadovoljiva (UNSAT).  
 
@@ -36,7 +36,7 @@ Integracionim testovima pokriveni su sledeći slučajevi:
   - Formula gde su sve klauze jedinicne i negativne
   - Lanac implikacija
 
-Pokretanje integracionih testova vrši se pomoću skripte `test_integration.py`, koja prolazi kroz sve test fajlove i pokreće solver nad njima.
+Pokretanje integracionih testova vrši se pomoću skripte `test_integration.py`, koja prolazi kroz sve test fajlove i pokreće rešavač nad njima.
 
 Nakon pokretanja testova komandom:
 ```bash
@@ -60,7 +60,7 @@ Testovi su smešteni u folderu `tests/unit` i organizovani po klasama koje testi
 
 #### Klasa `Clause`
 
-Klasa `Clause` predstavlja jednu logičku klauzu u CNF formuli i sadrži najkritičniju logiku za rad solvera. Testovima su pokriveni sledeći aspekti:
+Klasa `Clause` predstavlja jednu logičku klauzu u CNF formuli i sadrži najkritičniju logiku za rad rešavača. Testovima su pokriveni sledeći aspekti:
 
 - Inicijalizacija klauze i otkrivanje tautologija u fazi preprocesiranja (`preprocess`)
 - Provera stanja klauze - da li je jedinična (`is_unit`) ili prazna (`is_empty`)
@@ -145,7 +145,7 @@ Pokrivenost koda integracionim testovima merena je komandom:
 pytest tests/integration/test_integration.py --cov=cdcl_solver --cov=clause --cov=cnf --cov=dimacs_parser --cov=implication_graph --cov=lazy_clause  --cov-report=html
 ```
 
-Za razliku od jediničnih testova koji mere pokrivenost pojedinačnih klasa, integracioni testovi pokreću ceo solver, pa ima smisla meriti pokrivenost svih fajlova projekta zajedno.
+Za razliku od jediničnih testova koji mere pokrivenost pojedinačnih klasa, integracioni testovi pokreću ceo rešavač, pa ima smisla meriti pokrivenost svih fajlova projekta zajedno.
 
 
 ![Izveštaj pokrivenosti za integracione testove](./images/integration_coverage.png)
@@ -171,7 +171,7 @@ Pylint je alat za statičku analizu Python koda koji proverava stil, kvalitet i 
 pip install pylint
 ```
 
-Analiza je sprovedena nad glavnim fajlom solvera `cdcl_solver.py`, a ukupna ocena iznosi **6.23/10**.
+Analiza je sprovedena nad glavnim fajlom rešavača `cdcl_solver.py`, a ukupna ocena iznosi **6.23/10**.
 
 ### Kategorije pronađenih problema
 
@@ -197,14 +197,14 @@ Opisi problema su prilično informativni tako da se može lako razumeti gde je n
 
 **Upozorenja (W)** ukazuju na tri nekorišćena importa: `numpy`, `random` i `Lazy_Clause` su importovani ali se nigde ne koriste u fajlu. Prisutna su i dva `fixme` upozorenja koja odgovaraju TODO komentarima u kodu - njihovo prisustvo u finalnoj verziji koda nije poželjno jer ukazuje na nedovršenu implementaciju i može zbuniti buduće čitaoce koda.
 
-**Predlozi za refaktorisanje (R)** ukazuju na strukturne probleme: klasa `CDCL_Solver` ima previše atributa (16, dok je preporučeno maksimalno 7), glavna metoda solvera ima previše grana (19) i previše naredbi (68), što ukazuje na visoku složenost koja otežava čitanje i testiranje. Takođe je uočen `no-else-return` - nepotrebna `else` grana nakon `return` naredbe.
+**Predlozi za refaktorisanje (R)** ukazuju na strukturne probleme: klasa `CDCL_Solver` ima previše atributa (16, dok je preporučeno maksimalno 7), glavna metoda rešavača ima previše grana (19) i previše naredbi (68), što ukazuje na visoku složenost koja otežava čitanje i testiranje. Takođe je uočen `no-else-return` - nepotrebna `else` grana nakon `return` naredbe.
 
 **Imenovanje** - ime klase `CDCL_Solver` ne prati Python konvenciju PascalCase (trebalo bi biti `CDCLSolver`).
 
 ### Zaključak
 
 Većina pronađenih problema su stilske prirode i ne utiču na ispravnost programa. 
-Međutim, upozorenja o nekorišćenim importima i previsokoj složenosti glavne metode solvera su vredni pažnje - nekorišćeni importi povećavaju nepotrebne zavisnosti, a visoka složenost glavne metode direktno otežava testiranje i održavanje.
+Međutim, upozorenja o nekorišćenim importima i previsokoj složenosti glavne metode rešavača su vredni pažnje - nekorišćeni importi povećavaju nepotrebne zavisnosti, a visoka složenost glavne metode direktno otežava testiranje i održavanje.
 
 
 ## Analiza složenosti koda - Radon
@@ -245,7 +245,7 @@ Detaljan izveštaj sa složenošću svake metode i klase sačuvan je u fajlu `ra
 
 Ukupno je analizirano 103 bloka (klase, funkcije i metode), a prosečna složenost iznosi **B (5.62)**, što je generalno prihvatljivo. Međutim, izdvajaju se dva kritična slučaja:
 
-- `CDCL_Solver.solve` u `cdcl_solver.py` dobila je ocenu **E (35)** - ovo je glavna metoda solvera koja implementira celokupan CDCL algoritam i sadrži veliki broj grananja, što je u skladu sa Pylint nalazom o previše grana i naredbi u istoj metodi.
+- `CDCL_Solver.solve` u `cdcl_solver.py` dobila je ocenu **E (35)** - ovo je glavna metoda rešavača koja implementira celokupan CDCL algoritam i sadrži veliki broj grananja, što je u skladu sa Pylint nalazom o previše grana i naredbi u istoj metodi.
 
 - `Lazy_Clause.bcp` u `lazy_clause.py` dobila je ocenu **D (29)**. Ova metoda ima tri glavne grane u zavisnosti od veličine klauze, sa dodatnim grananjem unutar svake. Ista metoda postoji i u fajlu `cnf_data_structure.py` (ocena **E (31)**), ali se taj fajl ne koristi u projektu.
 
@@ -256,7 +256,7 @@ cProfile je ugrađeni Python alat za profajliranje koji meri vreme izvršavanja 
 
 ### Pokretanje
 
-Profajliranje je sprovedeno nad većim UNSAT primerom (`large_unsat.cnf`) sa 100 promenljivih i 160 klauza, koji dobro oslikava rad programa jer solver mora da istraži veći prostor pretrage pre nego što zaključi da formula nema rešenje.
+Profajliranje je sprovedeno nad većim UNSAT primerom (`large_unsat.cnf`) sa 100 promenljivih i 160 klauza, koji dobro oslikava rad programa jer rešavač mora da istraži veći prostor pretrage pre nego što zaključi da formula nema rešenje.
 
 Izlaz je sačuvan u `.prof` fajl komandom:
 ```bash
@@ -309,7 +309,7 @@ pip install pytest-benchmark
 ```
 
 Za razliku od običnih testova koji samo proveravaju ispravnost rezultata, benchmark testovi pokreću svaku funkciju više puta i mere statistike vremena izvršavanja - minimum, maksimum, srednju vrednost i standardnu devijaciju. 
-Na osnovu toga se može zaključiti koliko je solver efikasan na različitim ulazima.
+Na osnovu toga se može zaključiti koliko je rešavač efikasan na različitim ulazima.
 
 Benchmark testovi se nalaze u fajlu `tests/integration/test_benchmark.py` i uglavnom pokrivaju iste slučajeve kao integracioni testovi, s tim što je iz foldera `all_sat` uzet samo jedan reprezentativni primer jer su svi primeri u tom folderu slične veličine.
 
@@ -325,6 +325,35 @@ Vremena su izražena u mikrosekundama (us), što je naznačeno u zaglavlju tabel
 Kolone označavaju redom: minimalno, maksimalno i srednje vreme izvršavanja, standardnu devijaciju, medijanu, interkvartilni raspon, broj outlier-a, broj operacija u sekundi, broj pokretanja i broj iteracija po pokretanju.
 
 Rezultati pokazuju jasnu korelaciju između veličine ulaza i vremena rešavanja. 
-Jednostavni primeri završavaju za oko 70-135 mikrosekundi. `large_sat` (20 promenljivih, 91 klauza) traje u proseku **10ms**, a `large_unsat` (100 promenljivih, 160 klauza) čak **107ms**. Duže vreme izvršavanja `large_unsat` primera posledica je i veće formule i same prirode UNSAT problema - solver mora da istraži ceo prostor pretrage pre nego što donese zaključak, za razliku od SAT primera gde pronalazi rešenje čim naiđe na zadovoljavajuću valuaciju.
+Jednostavni primeri završavaju za oko 70-135 mikrosekundi. `large_sat` (20 promenljivih, 91 klauza) traje u proseku **10ms**, a `large_unsat` (100 promenljivih, 160 klauza) čak **107ms**. Duže vreme izvršavanja `large_unsat` primera posledica je i veće formule i same prirode UNSAT problema - rešavač mora da istraži ceo prostor pretrage pre nego što donese zaključak, za razliku od SAT primera gde pronalazi rešenje čim naiđe na zadovoljavajuću valuaciju.
 
-Visoka standardna devijacija kod oba velika primera ukazuje na nedeterministično ponašanje solvera, što je posledica nasumičnog odabira referentnih literala (`refA` i `refB`) u klasi `Lazy_Clause`. Različiti odabiri referenci tokom pretrage mogu dovesti do veoma različitih putanja kroz prostor rešenja, pa samim tim i do različitih vremena izvršavanja.
+Visoka standardna devijacija kod oba velika primera ukazuje na nedeterministično ponašanje rešavača, što je posledica nasumičnog odabira referentnih literala (`refA` i `refB`) u klasi `Lazy_Clause`. Različiti odabiri referenci tokom pretrage mogu dovesti do veoma različitih putanja kroz prostor rešenja, pa samim tim i do različitih vremena izvršavanja.
+
+## Formatiranje koda - black
+Za automatsko formatiranje koda korišćen je alat black, koji primenjuje konzistentno stilizovanje koda na svim fajlovima projekta.
+
+Mogu se instalirati komandama:
+```bash
+pip install black
+```
+
+Da bi se izbeglo direktno menjanje originalnog koda, formatiranje je sprovedeno nad privremenom kopijom projekta. Skripta kopira projekat, pokreće black nad kopijom i generiše `.patch` fajl sa svim promenama:
+
+```bash
+#!/bin/bash
+cp -r ./CDCL-based-SAT-Solver /tmp/CDCL-based-SAT-Solver_formatted
+black /tmp/CDCL-based-SAT-Solver_formatted
+
+diff -ru ./CDCL-based-SAT-Solver /tmp/CDCL-based-SAT-Solver_formatted > patches/formatting.patch
+rm -rf /tmp/CDCL-based-SAT-Solver_formatted
+```
+
+Rezultat je sačuvan u fajlu `patches/formatting.patch`.
+**black** primenjuje:
+
+- Konzistentno formatiranje linija prema PEP 8 standardu
+- Prelamanje predugih linija
+- Standardizaciju belina, uvlačenja i znakova navoda
+- Uklanjanje viška praznih linija i `trailing-whitespace`
+
+Ove izmene direktno rešavaju većinu Pylint upozorenja iz kategorije **C — Convention**, koja se odnose na stil i formatiranje koda.

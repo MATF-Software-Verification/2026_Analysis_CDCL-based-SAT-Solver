@@ -2,13 +2,13 @@
 
 ## Opis projekta
 
-Analiziran je CDCL-based SAT solver napisan u Python-u, koji rešava SAT problem koristeći CDCL (Conflict-Driven Clause Learning) algoritam.
+Analiziran je CDCL-based SAT rešavač napisan u Python-u, koji rešava SAT problem koristeći CDCL (Conflict-Driven Clause Learning) algoritam.
 
 - Originalni repozitorijum: https://github.com/thtran97/CDCL-based-SAT-Solver
 - Grana: `main`
 - Commit: `e61ba5d2d6c74760386c20d27f0c0f428aaafdc2`
 
-Solver je dodat kao git submodul u folderu `CDCL-based-SAT-Solver`.
+Rešavač je dodat kao git submodul u folderu `CDCL-based-SAT-Solver`.
 
 Detaljan opis analize i rezultati svakog korišćenog alata nalaze se u fajlu [ProjectAnalysisReport.md](ProjectAnalysisReport.md).
 
@@ -66,14 +66,21 @@ chmod +x profiling/run_profiling.sh
 ./profiling/run_profiling.sh
 ```
 
+### Formatiranje koda - black
+```bash
+pip install black
+chmod +x code_formatting/run_formatting.sh
+./code_formatting/run_formatting.sh
+```
 
 ## Zaključci
 
-- Solver ispravno rešava SAT i UNSAT formule, što je potvrđeno integracionim i jediničnim testovima sa ukupnom pokrivenošću od 93%.
+- Rešavač ispravno rešava SAT i UNSAT formule, što je potvrđeno integracionim i jediničnim testovima sa ukupnom pokrivenošću od 93%.
 - Glavna metoda `CDCL_Solver.solve` ima izuzetno visoku ciklomatsku složenost (ocena E, vrednost 35), što otežava testiranje i održavanje.
-- Profajliranje je pokazalo da `lazy_clause.bcp` dominira vremenom izvršavanja sa 39076 poziva na velikom UNSAT primeru - svako poboljšanje ove funkcije direktno bi ubrzalo ceo solver.
-- Benchmark testiranje je potvrdilo da `large_unsat` (100 promenljivih, 160 klauza) traje značajno duže od `large_sat` (20 promenljivih, 91 klauza) - 107ms naspram 10ms. Ovo je posledica i razlike u veličini formule i same prirode UNSAT problema, gde solver mora da istraži ceo prostor pretrage pre nego što donese zaključak.
-- Pylint je otkrio nekorišćene importe (`numpy`, `random`, `Lazy_Clause`) koji su uklonjeni u okviru formatiranja koda.
+- Profajliranje je pokazalo da `lazy_clause.bcp` dominira vremenom izvršavanja - svako poboljšanje ove funkcije direktno bi ubrzalo ceo rešavač.
+- Benchmark testiranje je potvrdilo da `large_unsat` (100 promenljivih, 160 klauza) traje značajno duže od `large_sat` (20 promenljivih, 91 klauza) - 107ms naspram 10ms. Ovo je posledica i razlike u veličini formule i same prirode UNSAT problema, gde rešavač mora da istraži ceo prostor pretrage pre nego što donese zaključak.
+- Pylint je otkrio nekorišćene importe (`numpy`, `random`, `Lazy_Clause`).
+- Korišćenjem alata black kod je formatiran prema PEP 8 standardu. Pylint je otkrio brojne stilske greške (konvencije i formatiranje), koje su većinom automatski rešene primenom black.
 - Fajlovi `cnf_data_structure.py` i `dpll_solver.py` iz originalnog projekta nisu korišćeni i trebalo bi ih obrisati.
 
 ## Autor
