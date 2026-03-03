@@ -12,6 +12,8 @@ Rešavač je dodat kao git submodul u folderu `CDCL-based-SAT-Solver`.
 
 Detaljan opis analize i rezultati svakog korišćenog alata nalaze se u fajlu [ProjectAnalysisReport.md](ProjectAnalysisReport.md).
 
+Projekt je urađen u okviru kursa **Verifikacija softvera** na Matematičkom fakultetu, Univerzitet u Beogradu.
+
 ## Build
 Primer pokretanja programa iz korena repozitorijuma:
 ```bash
@@ -66,7 +68,14 @@ chmod +x profiling/run_profiling.sh
 ./profiling/run_profiling.sh
 ```
 
-### Formatiranje koda - black
+### Merenje performansi - pytest-benchmark
+```bash
+pip install pytest-benchmark
+chmod +x benchmark_testing/run_benchmark.sh
+./benchmark_testing/run_benchmark.sh
+```
+
+### Formatiranje koda - Black
 ```bash
 pip install black
 chmod +x code_formatting/run_formatting.sh
@@ -76,14 +85,13 @@ chmod +x code_formatting/run_formatting.sh
 ## Zaključci
 
 - Rešavač ispravno rešava SAT i UNSAT formule, što je potvrđeno integracionim i jediničnim testovima sa ukupnom pokrivenošću od 93%.
+- Tokom jediničnog testiranja otkrivena je nepravilnost u klasi `Clause` - prilikom preprocesiranja tautološke klauze veličina se postavlja na 0, ali je konstruktor naknadno prepisuje dužinom niza, čime se ispravka gubi.
+- Analizom pokrivenosti koda otkrivena je nedostižna grana `elif x > m2` u metodi `get_backtrack_level` klase `Clause` - program iterira nad `set` kolekcijom u rastućem redosledu za cele brojeve, pa ta grana nikada ne može biti izvršena.
 - Glavna metoda `CDCL_Solver.solve` ima izuzetno visoku ciklomatsku složenost (ocena E, vrednost 35), što otežava testiranje i održavanje.
 - Profajliranje je pokazalo da `lazy_clause.bcp` dominira vremenom izvršavanja - svako poboljšanje ove funkcije direktno bi ubrzalo ceo rešavač.
 - Benchmark testiranje je potvrdilo da `large_unsat` (100 promenljivih, 160 klauza) traje značajno duže od `large_sat` (20 promenljivih, 91 klauza) - 107ms naspram 10ms. Ovo je posledica i razlike u veličini formule i same prirode UNSAT problema, gde rešavač mora da istraži ceo prostor pretrage pre nego što donese zaključak.
-- Pylint je otkrio nekorišćene importe (`numpy`, `random`, `Lazy_Clause`).
-- Korišćenjem alata black kod je formatiran prema PEP 8 standardu. Pylint je otkrio brojne stilske greške (konvencije i formatiranje), koje su većinom automatski rešene primenom black.
+- Pylint je otkrio nekorišćene importe (`numpy`, `random`, `Lazy_Clause`) i brojne stilske greške koje su automatski ispravljene primenom alata Black.
 - Fajlovi `cnf_data_structure.py` i `dpll_solver.py` iz originalnog projekta nisu korišćeni i trebalo bi ih obrisati.
 
 ## Autor
 Staša Đorđević 1007/2025
-
-Projekt je urađen u okviru kursa **Verifikacija softvera** na Matematičkom fakultetu, Univerzitet u Beogradu.

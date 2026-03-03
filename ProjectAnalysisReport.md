@@ -12,7 +12,7 @@ Primenjeni su sledeći alati za analizu projekta:
 5. Analiza složenosti - Radon
 6. Profajliranje - cProfile i pyprof2calltree
 7. Merenje performansi - pytest-benchmark
-8. Formatiranje koda - black
+8. Formatiranje koda - Black
 
 ## Integraciono testiranje - pytest
 
@@ -144,9 +144,7 @@ Pokrivenost koda integracionim testovima merena je komandom:
 ```bash
 pytest tests/integration/test_integration.py --cov=cdcl_solver --cov=clause --cov=cnf --cov=dimacs_parser --cov=implication_graph --cov=lazy_clause  --cov-report=html
 ```
-
-Za razliku od jediničnih testova koji mere pokrivenost pojedinačnih klasa, integracioni testovi pokreću ceo rešavač, pa ima smisla meriti pokrivenost svih fajlova projekta zajedno.
-
+Za razliku od jediničnih testova koji mere pokrivenost pojedinačnih klasa, integracioni testovi pokreću ceo rešavač, pa ima smisla meriti pokrivenost svih fajlova projekta zajedno. Merenje je ograničeno na fajlove koji su deo aktivne implementacije - fajlovi `dpll_solver.py` i `cnf_data_structure.py` su izostavljeni jer se nigde ne koriste, a `utils.py` jer samo učitava argumente komandne linije i nije deo same logike rešavanja.
 
 ![Izveštaj pokrivenosti za integracione testove](./images/integration_coverage.png)
 
@@ -199,7 +197,7 @@ Opisi problema su prilično informativni tako da se može lako razumeti gde je n
 
 **Predlozi za refaktorisanje (R)** ukazuju na strukturne probleme: klasa `CDCL_Solver` ima previše atributa (16, dok je preporučeno maksimalno 7), glavna metoda rešavača ima previše grana (19) i previše naredbi (68), što ukazuje na visoku složenost koja otežava čitanje i testiranje. Takođe je uočen `no-else-return` - nepotrebna `else` grana nakon `return` naredbe.
 
-**Imenovanje** - ime klase `CDCL_Solver` ne prati Python konvenciju PascalCase (trebalo bi biti `CDCLSolver`).
+**Imenovanje** - ime klase `CDCL_Solver` ne prati Python konvenciju PascalCase (trebalo bi biti `CDCLSolver` ili `CdclSolver`).
 
 ### Zaključak
 
@@ -221,7 +219,7 @@ Može se instalirati komandom:
 pip install radon
 ```
 
-Radon ima više komandi, od kojih svaka meri drugačiju metriku:
+Radon ima više opcija, od kojih svaka meri drugačiju metriku:
 - `raw` - raw metrike
 - `cc` - ciklomatska složenost
 - `hal` - Halstead metrike
@@ -282,7 +280,7 @@ Pokretanje:
 ```bash
 pyprof2calltree -i profileFile.prof -k
 ```
-
+Opcija `-i` označava ulazni fajl (input) - u ovom slučaju .prof fajl koji je generisao cProfile. Opcija `-k` automatski otvara KCachegrind sa konvertovanim fajlom.
 ### Rezultati
 
 Funkcije projekta sortirane po ukupnom vremenu izvršavanja:
@@ -308,10 +306,7 @@ Instalacija:
 pip install pytest-benchmark
 ```
 
-Za razliku od običnih testova koji samo proveravaju ispravnost rezultata, benchmark testovi pokreću svaku funkciju više puta i mere statistike vremena izvršavanja - minimum, maksimum, srednju vrednost i standardnu devijaciju. 
-Na osnovu toga se može zaključiti koliko je rešavač efikasan na različitim ulazima.
-
-Benchmark testovi se nalaze u fajlu `tests/integration/test_benchmark.py` i uglavnom pokrivaju iste slučajeve kao integracioni testovi, s tim što je iz foldera `all_sat` uzet samo jedan reprezentativni primer jer su svi primeri u tom folderu slične veličine.
+Za razliku od običnih testova koji samo proveravaju ispravnost rezultata, benchmark testovi pokreću svaku funkciju više puta i mere statistike vremena izvršavanja. Na osnovu toga se može zaključiti koliko je rešavač efikasan na različitim ulazima. Nisu pokriveni svi slučajevi kao u integracionim testovima - izostavljeni su trivijalni primeri kod kojih merenje performansi nije informativno. Takođe, umesto iteriranja kroz sve fajlove iz foldera `all_sat`, uzet je samo jedan reprezentativni primer (`large_sat`) jer su svi primeri u tom folderu slične veličine.
 
 Pokretanje:
 ```bash
@@ -329,10 +324,10 @@ Jednostavni primeri završavaju za oko 70-135 mikrosekundi. `large_sat` (20 prom
 
 Visoka standardna devijacija kod oba velika primera ukazuje na nedeterministično ponašanje rešavača, što je posledica nasumičnog odabira referentnih literala (`refA` i `refB`) u klasi `Lazy_Clause`. Različiti odabiri referenci tokom pretrage mogu dovesti do veoma različitih putanja kroz prostor rešenja, pa samim tim i do različitih vremena izvršavanja.
 
-## Formatiranje koda - black
-Za automatsko formatiranje koda korišćen je alat black, koji primenjuje konzistentno stilizovanje koda na svim fajlovima projekta.
+## Formatiranje koda - Black
+Za automatsko formatiranje koda korišćen je alat Black, koji primenjuje konzistentno stilizovanje koda na svim fajlovima projekta.
 
-Mogu se instalirati komandama:
+Može se instalirati komandom:
 ```bash
 pip install black
 ```
@@ -349,11 +344,12 @@ rm -rf /tmp/CDCL-based-SAT-Solver_formatted
 ```
 
 Rezultat je sačuvan u fajlu `patches/formatting.patch`.
-**black** primenjuje:
+
+**Black** primenjuje:
 
 - Konzistentno formatiranje linija prema PEP 8 standardu
 - Prelamanje predugih linija
 - Standardizaciju belina, uvlačenja i znakova navoda
 - Uklanjanje viška praznih linija i `trailing-whitespace`
 
-Ove izmene direktno rešavaju većinu Pylint upozorenja iz kategorije **C — Convention**, koja se odnose na stil i formatiranje koda.
+Ove izmene direktno rešavaju većinu Pylint upozorenja iz kategorije **C - Convention**, koja se odnose na stil i formatiranje koda.
